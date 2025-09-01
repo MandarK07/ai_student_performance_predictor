@@ -1,5 +1,6 @@
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 from pydantic import BaseModel, Field
 import joblib
@@ -10,6 +11,15 @@ model = model_bundle["model"]
 feature_columns = model_bundle["feature_columns"]
 
 app = FastAPI()
+
+# Insert CORS middleware here
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class StudentData(BaseModel):
     student_id: str
