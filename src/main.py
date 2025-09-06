@@ -5,12 +5,38 @@ import pandas as pd
 from pydantic import BaseModel, Field
 import joblib
 
+from fastapi.responses import JSONResponse, Response
+from fastapi.responses import HTMLResponse
+
+
+
 # Load model and expected features
 model_bundle = joblib.load("models/random_forest.joblib")
 model = model_bundle["model"]
 feature_columns = model_bundle["feature_columns"]
 
 app = FastAPI()
+
+#
+
+@app.get("/", response_class=HTMLResponse)
+def custom_home():
+    return """
+    <html>
+        <head>
+            <title>Student Predictor API</title>
+        </head>
+        <body style="font-family: Arial; text-align: center; margin-top: 50px;">
+            <h1>📊 Welcome to the Student Performance Predictor</h1>
+            <p>This API helps forecast academic outcomes based on student metrics.</p>
+            <a href="/docs">Explore Swagger Docs</a>
+            <p>Access the frontend dashboard below:</p>
+            <a href="http://localhost:5173" target="_blank">📊 Open Dashboard</a>
+
+        </body>
+    </html>
+    """
+
 
 # Insert CORS middleware here
 app.add_middleware(
