@@ -8,6 +8,11 @@ import joblib
 from fastapi.responses import JSONResponse, Response
 from fastapi.responses import HTMLResponse
 
+from fastapi import APIRouter, UploadFile, File
+
+from src.api.predict import router as predict_router
+from src.api.upload import router as upload_router
+
 
 
 # Load model and expected features
@@ -15,10 +20,28 @@ model_bundle = joblib.load("models/random_forest.joblib")
 model = model_bundle["model"]
 feature_columns = model_bundle["feature_columns"]
 
-app = FastAPI()
 
-#
 
+app = FastAPI(title="Student Performance Predictor")
+
+# CORS middleware
+# Allow requests from the React frontend
+origins = [
+    "http://localhost:5173",  # React dev server
+]
+ 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(predict_router, prefix="/api")
+app.include_router(upload_router, prefix="/api")
+
+#endpoint for home
 @app.get("/", response_class=HTMLResponse)
 def custom_home():
     return """
@@ -38,15 +61,7 @@ def custom_home():
     """
 
 
-# Insert CORS middleware here
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Or specify your frontend URL
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+# Define input data model
 class StudentData(BaseModel):
     student_id: str
     gender: str
@@ -63,7 +78,8 @@ class StudentData(BaseModel):
     previous_gpa_sem1: float
     previous_gpa_sem2: float
 
-@app.post("/predict")
+# Prediction endpoint
+@app.post("/predict/")
 def predict(data: StudentData):
     try:
         # Convert input to DataFrame
@@ -102,5 +118,17 @@ def predict(data: StudentData):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Model prediction failed: {str(e)}")
+
+# CSV upload endpoint
+router = APIRouter()
+@router.post("/upload-csv")
+
+async def upload_csv(file: UploadFile = File(...)):
+    contents = await file.read()
+    # Save or process the CSV as needed
+    with open("data/uploads/" + file.filename, "wb") as f:
+        f.write(contents)
+    return {"filename": file.filename}
+
 
 # uvicorn src.main:app --reload
