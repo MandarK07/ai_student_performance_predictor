@@ -1,134 +1,170 @@
 
+"""Main FastAPI application with database integration"""
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
-from pydantic import BaseModel, Field
-import joblib
-
-from fastapi.responses import JSONResponse, Response
-from fastapi.responses import HTMLResponse
-
-from fastapi import APIRouter, UploadFile, File
+from fastapi.responses import HTMLResponse, JSONResponse
+import os
+from contextlib import asynccontextmanager
 
 from src.api.predict import router as predict_router
 from src.api.upload import router as upload_router
+from src.api.students import router as students_router
+from src.database.connection import test_connection, init_db
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application startup and shutdown events"""
+    # Startup
+    print("🚀 Starting AI Student Performance Predictor...")
+    
+    # Test database connection
+    if test_connection():
+        print("✅ Database connection successful")
+    else:
+        print("⚠️  Database connection failed - some features may not work")
+    
+    # Create upload directory if it doesn't exist
+    os.makedirs("data/uploads", exist_ok=True)
+    
+    yield
+    
+    # Shutdown
+    print("👋 Shutting down...")
 
-# Load model and expected features
-model_bundle = joblib.load("models/random_forest.joblib")
-model = model_bundle["model"]
-feature_columns = model_bundle["feature_columns"]
 
-
-
-app = FastAPI(title="Student Performance Predictor")
+app = FastAPI(
+    title="AI Student Performance Predictor",
+    description="Machine learning-powered student performance prediction system",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 # CORS middleware
-# Allow requests from the React frontend
-origins = [
-    "http://localhost:5173",  # React dev server
-]
- 
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or specify your frontend URL
+    allow_origins=["http://localhost:5173", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(predict_router, prefix="/api")
-app.include_router(upload_router, prefix="/api")
 
-#endpoint for home
+# Include routers
+app.include_router(predict_router, prefix="/api", tags=["Predictions"])
+app.include_router(upload_router, prefix="/api", tags=["Data Upload"])
+app.include_router(students_router, prefix="/api", tags=["Students"])
+
+
 @app.get("/", response_class=HTMLResponse)
-def custom_home():
+def home():
+    """Home page with API information"""
     return """
+    <!DOCTYPE html>
     <html>
         <head>
-            <title>Student Predictor API</title>
+            <title>Student Performance Predictor API</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    text-align: center;
+                    margin: 50px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                }
+                .container {
+                    background: rgba(255,255,255,0.1);
+                    padding: 40px;
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                h1 { font-size: 3rem; margin-bottom: 20px; }
+                p { font-size: 1.2rem; margin: 20px 0; }
+                a {
+                    display: inline-block;
+                    margin: 10px;
+                    padding: 15px 30px;
+                    background: white;
+                    color: #667eea;
+                    text-decoration: none;
+                    border-radius: 10px;
+                    font-weight: bold;
+                    transition: transform 0.2s;
+                }
+                a:hover { transform: translateY(-3px); }
+                .features {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin-top: 40px;
+                }
+                .feature {
+                    background: rgba(255,255,255,0.15);
+                    padding: 20px;
+                    border-radius: 10px;
+                }
+            </style>
         </head>
-        <body style="font-family: Arial; text-align: center; margin-top: 50px;">
-            <h1>📊 Welcome to the Student Performance Predictor</h1>
-            <p>This API helps forecast academic outcomes based on student metrics.</p>
-            <a href="/docs">Explore Swagger Docs</a>
-            <p>Access the frontend dashboard below:</p>
-            <a href="http://localhost:5173" target="_blank">📊 Open Dashboard</a>
-
+        <body>
+            <div class="container">
+                <h1>📊 Student Performance Predictor</h1>
+                <p>AI-powered analytics for academic success forecasting</p>
+                
+                <div>
+                    <a href="/docs">📚 API Documentation</a>
+                    <a href="http://localhost:5173" target="_blank">🎯 Open Dashboard</a>
+                </div>
+                
+                <div class="features">
+                    <div class="feature">
+                        <h3>🤖 ML Predictions</h3>
+                        <p>Advanced Random Forest models</p>
+                    </div>
+                    <div class="feature">
+                        <h3>💾 Database</h3>
+                        <p>PostgreSQL with full tracking</p>
+                    </div>
+                    <div class="feature">
+                        <h3>📁 Batch Upload</h3>
+                        <p>CSV bulk processing</p>
+                    </div>
+                    <div class="feature">
+                        <h3>⚠️ Risk Detection</h3>
+                        <p>Early intervention alerts</p>
+                    </div>
+                </div>
+            </div>
         </body>
     </html>
     """
 
 
-# Define input data model
-class StudentData(BaseModel):
-    student_id: str
-    gender: str
-    age: int
-    parent_education: str
-    attendance_rate: float
-    study_hours: float
-    previous_gpa: float
-    final_grade: float
-    assignment_score_avg: float
-    exam_score_avg: float
-    class_participation: float
-    late_submissions: int
-    previous_gpa_sem1: float
-    previous_gpa_sem2: float
-
-# Prediction endpoint
-@app.post("/predict/")
-def predict(data: StudentData):
-    try:
-        # Convert input to DataFrame
-        input_df = pd.DataFrame([data.dict()])
-
-        # Apply preprocessing
-        from src.features.preprocess import preprocess_data  # assuming it's modularized
-        processed_df = preprocess_data(input_df)
-
-        # One-hot encode gender for expected columns
-        for col in feature_columns:
-            if col.startswith("gender_"):
-                gender_value = data.gender.strip().lower()
-                processed_df[col] = 1 if col[7:].lower() == gender_value else 0
-
-        # Remove raw 'gender' column if not expected
-        if "gender" not in feature_columns and "gender" in processed_df.columns:
-            processed_df = processed_df.drop(columns=["gender"])
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    db_status = "connected" if test_connection() else "disconnected"
+    return {
+        "status": "healthy",
+        "database": db_status,
+        "version": "1.0.0"
+    }
 
 
-        # Align with expected features
-        for col in feature_columns:
-            if col not in processed_df.columns:
-                processed_df[col] = 0
-        processed_df = processed_df[feature_columns]
-
-        # Predict
-        prediction = model.predict(processed_df)[0]
-        probability = model.predict_proba(processed_df)[0][prediction]
-
-        return {
-            "prediction": "Pass" if prediction == 1 else "Fail",
-            "confidence": round(probability * 100, 2),
-            "features_used": feature_columns
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Model prediction failed: {str(e)}")
-
-# CSV upload endpoint
-router = APIRouter()
-@router.post("/upload-csv")
-
-async def upload_csv(file: UploadFile = File(...)):
-    contents = await file.read()
-    # Save or process the CSV as needed
-    with open("data/uploads/" + file.filename, "wb") as f:
-        f.write(contents)
-    return {"filename": file.filename}
+@app.get("/api/stats")
+async def get_statistics():
+    """Get system statistics"""
+    # This would connect to database and return real stats
+    return {
+        "message": "Statistics endpoint",
+        "note": "Connect to database to see real-time stats"
+    }
 
 
-# uvicorn src.main:app --reload
+if __name__ == "__main__":
+    import uvicorn
+    from src.main import app   # explicit import of the FastAPI app
+    uvicorn.run(app, host="localhost", port=8000, reload=True)
+
+
+# python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000

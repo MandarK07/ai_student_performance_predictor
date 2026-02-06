@@ -18,3 +18,4 @@ This project predicts student academic performance using machine learning. It he
 - `frontend/`: React dashboard
 - `data/`: Raw and processed datasets
 - `models/`: Saved ML models
+

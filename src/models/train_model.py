@@ -27,7 +27,9 @@ df.columns = df.columns.str.strip()  # <-- Add this line to strip whitespace
 print(df.columns.tolist())
 
 # Drop identifier and keep raw final_grade
-ids = df.pop("student_id")
+# ids = df.pop("student_code")
+drop_cols = ["student_code", "first_name", "last_name", "email", "enrollment_date"]
+df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
 if "final_grade" in df.columns:
     y_raw = df.pop("final_grade")
