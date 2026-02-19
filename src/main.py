@@ -1,15 +1,15 @@
 
 """Main FastAPI application with database integration"""
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 import os
 from contextlib import asynccontextmanager
 
 from src.api.predict import router as predict_router
 from src.api.upload import router as upload_router
 from src.api.students import router as students_router
-from src.database.connection import test_connection, init_db
+from src.database.connection import test_connection
 
 
 @asynccontextmanager

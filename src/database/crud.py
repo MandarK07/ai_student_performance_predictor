@@ -2,7 +2,7 @@
 CRUD operations for database models
 """
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, and_, or_
 from datetime import datetime
 import uuid
@@ -153,6 +153,22 @@ def get_latest_prediction(
     return db.query(Prediction).filter(
         Prediction.student_id == student_id
     ).order_by(desc(Prediction.prediction_date)).first()
+
+
+def get_student_prediction_history(
+    db: Session,
+    student_id: uuid.UUID,
+    limit: int = 100
+) -> List[Prediction]:
+    """Get prediction history for a student with model and interventions"""
+    return db.query(Prediction).options(
+        joinedload(Prediction.model),
+        joinedload(Prediction.interventions)
+    ).filter(
+        Prediction.student_id == student_id
+    ).order_by(
+        desc(Prediction.prediction_date)
+    ).limit(limit).all()
 
 
 def get_predictions_by_risk_level(

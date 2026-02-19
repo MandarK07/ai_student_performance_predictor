@@ -6,11 +6,9 @@ from datetime import datetime
 import joblib
 import pandas as pd
 from typing import Optional
-import uuid
 
 from src.database.connection import get_db
 from src.database import crud
-from src.database.models import Student, Prediction
 from src.features.preprocess import preprocess_data
 
 router = APIRouter()
@@ -195,18 +193,6 @@ async def predict(features: StudentFeatures, db: Session = Depends(get_db)):
 
             crud.create_intervention(db, intervention_data)
             print("Mapped intervention type:", intervention_type)
-
-        # if risk_level in ["High", "Critical"]:
-        #     intervention_data = {
-        #         "prediction_id": db_prediction.prediction_id,
-        #         "intervention_type": "Academic Support",
-        #         "priority": "High" if risk_level == "High" else "Urgent",
-        #         "description": recommendation,
-        #         "status": "pending"
-        #     }
-        #     crud.create_intervention(db, intervention_data)
-
-        
         
         return PredictionResponse(
             prediction_id=str(db_prediction.prediction_id),

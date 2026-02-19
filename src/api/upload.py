@@ -5,8 +5,6 @@ import pandas as pd
 from io import BytesIO
 from datetime import datetime
 import joblib
-from typing import List, Dict
-import uuid
 
 from src.database.connection import get_db
 from src.database import crud
@@ -139,21 +137,6 @@ async def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
                             "error": "Duplicate email"
                         })
                         continue
-
-
-
-                # student = crud.get_student_by_code(db, student_code)
-                # if not student:
-                #     student_data = {
-                #         "student_code": student_code,
-                #         "first_name": row.get('first_name', 'Student'),
-                #         "last_name": row.get('last_name', student_code),
-                #         "email": row.get('email', f"{student_code}@student.edu"),
-                #         "date_of_birth": datetime(2005, 1, 1).date(),
-                #         "gender": str(row['gender']),
-                #         "enrollment_date": datetime.now().date()
-                #     }
-                #     student = crud.create_student(db, student_data)
 
                 # Prepare features for prediction
                 input_data = {

@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field, EmailStr
 from datetime import date, datetime
 from typing import List, Optional
-import uuid
 
 from src.database.connection import get_db
 from src.database import crud
@@ -44,6 +43,157 @@ class StudentUpdate(BaseModel):
     last_name: Optional[str] = None
     email: Optional[EmailStr] = None
     status: Optional[str] = None
+
+
+def _average(values: List[Optional[float]]) -> Optional[float]:
+    valid = [v for v in values if v is not None]
+    if not valid:
+        return None
+    return round(sum(valid) / len(valid), 2)
+
+
+def _build_student_profile_payload(student: Student, db: Session):
+    academic_records = crud.get_student_academic_history(db, student.student_id)
+    prediction_history = crud.get_student_prediction_history(db, student.student_id)
+
+    latest_record = academic_records[0] if academic_records else None
+    latest_prediction = prediction_history[0] if prediction_history else None
+
+    gpa_values = [record.gpa for record in academic_records]
+    attendance_values = [record.attendance_rate for record in academic_records]
+    study_hour_values = [record.study_hours_per_week for record in academic_records]
+    total_absences = sum((record.absences or 0) for record in academic_records)
+    total_late_submissions = sum((record.late_submissions or 0) for record in academic_records)
+
+    gpa_trend = "insufficient_data"
+    non_null_gpa = [value for value in gpa_values if value is not None]
+    if len(non_null_gpa) >= 2:
+        # academic_records are sorted desc; compare latest against oldest.
+        delta = non_null_gpa[0] - non_null_gpa[-1]
+        if delta > 0.1:
+            gpa_trend = "improving"
+        elif delta < -0.1:
+            gpa_trend = "declining"
+        else:
+            gpa_trend = "stable"
+
+    academic_history = [
+        {
+            "record_id": str(record.record_id),
+            "academic_year": record.academic_year,
+            "semester": record.semester,
+            "gpa": record.gpa,
+            "total_credits": record.total_credits,
+            "attendance_rate": record.attendance_rate,
+            "study_hours_per_week": record.study_hours_per_week,
+            "class_participation_score": record.class_participation_score,
+            "late_submissions": record.late_submissions,
+            "absences": record.absences,
+            "created_at": record.created_at
+        }
+        for record in academic_records
+    ]
+
+    predictions_payload = []
+    recommendation_feed = []
+    recommendation_keys = set()
+
+    for prediction in prediction_history:
+        prediction_item = {
+            "prediction_id": str(prediction.prediction_id),
+            "academic_year": prediction.academic_year,
+            "semester": prediction.semester,
+            "predicted_gpa": prediction.predicted_gpa,
+            "predicted_category": prediction.predicted_performance_category,
+            "confidence_score": prediction.confidence_score,
+            "risk_level": prediction.risk_level,
+            "recommendation": prediction.recommendation,
+            "prediction_date": prediction.prediction_date,
+            "model": {
+                "model_name": prediction.model.model_name,
+                "model_version": prediction.model.model_version,
+                "algorithm": prediction.model.algorithm
+            } if prediction.model else None,
+            "interventions": [
+                {
+                    "intervention_id": str(intervention.intervention_id),
+                    "intervention_type": intervention.intervention_type,
+                    "priority": intervention.priority,
+                    "status": intervention.status,
+                    "description": intervention.description,
+                    "assigned_to": intervention.assigned_to,
+                    "due_date": intervention.due_date,
+                    "created_at": intervention.created_at
+                }
+                for intervention in prediction.interventions
+            ]
+        }
+        predictions_payload.append(prediction_item)
+
+        if prediction.recommendation:
+            rec_key = ("prediction", prediction.recommendation.strip())
+            if rec_key not in recommendation_keys:
+                recommendation_keys.add(rec_key)
+                recommendation_feed.append({
+                    "source": "prediction",
+                    "text": prediction.recommendation,
+                    "risk_level": prediction.risk_level,
+                    "date": prediction.prediction_date
+                })
+
+        for intervention in prediction.interventions:
+            if not intervention.description:
+                continue
+            rec_key = ("intervention", intervention.description.strip())
+            if rec_key in recommendation_keys:
+                continue
+            recommendation_keys.add(rec_key)
+            recommendation_feed.append({
+                "source": "intervention",
+                "text": intervention.description,
+                "status": intervention.status,
+                "priority": intervention.priority,
+                "date": intervention.created_at
+            })
+
+    return {
+        "student": {
+            "student_id": str(student.student_id),
+            "student_code": student.student_code,
+            "first_name": student.first_name,
+            "last_name": student.last_name,
+            "full_name": f"{student.first_name} {student.last_name}",
+            "email": student.email,
+            "date_of_birth": student.date_of_birth,
+            "gender": student.gender,
+            "enrollment_date": student.enrollment_date,
+            "status": student.status,
+            "created_at": student.created_at
+        },
+        "academic_metrics": {
+            "total_semesters": len(academic_records),
+            "latest_gpa": latest_record.gpa if latest_record else None,
+            "average_gpa": _average(gpa_values),
+            "latest_attendance_rate": latest_record.attendance_rate if latest_record else None,
+            "average_attendance_rate": _average(attendance_values),
+            "average_study_hours_per_week": _average(study_hour_values),
+            "total_absences": total_absences,
+            "total_late_submissions": total_late_submissions,
+            "gpa_trend": gpa_trend
+        },
+        "latest_prediction": {
+            "prediction_id": str(latest_prediction.prediction_id),
+            "predicted_gpa": latest_prediction.predicted_gpa,
+            "predicted_category": latest_prediction.predicted_performance_category,
+            "confidence_score": latest_prediction.confidence_score,
+            "risk_level": latest_prediction.risk_level,
+            "recommendation": latest_prediction.recommendation,
+            "prediction_date": latest_prediction.prediction_date
+        } if latest_prediction else None,
+        "academic_history": academic_history,
+        "prediction_history": predictions_payload,
+        "recommendations": recommendation_feed
+    }
 
 
 @router.post("/students", response_model=StudentResponse, status_code=201)
@@ -191,6 +341,18 @@ async def get_student_performance(student_code: str, db: Session = Depends(get_d
             "date": latest_prediction.prediction_date
         } if latest_prediction else None
     }
+
+
+@router.get("/students/{student_code}/profile")
+async def get_student_profile(student_code: str, db: Session = Depends(get_db)):
+    """
+    Get detailed student profile from the database:
+    academic metrics, prediction history, and recommendation feed.
+    """
+    student = crud.get_student_by_code(db, student_code)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return _build_student_profile_payload(student, db)
 
 
 @router.put("/students/{student_code}", response_model=StudentResponse)
