@@ -9,7 +9,7 @@ import uuid
 
 from src.database.models import (
     Student, Parent, AcademicRecord, Course, 
-    Enrollment, Grade, Prediction, MLModel, Intervention
+    Enrollment, Grade, Prediction, MLModel, Intervention, User, AuthSession, AuditLog
 )
 
 
@@ -245,6 +245,216 @@ def get_active_model(db: Session) -> Optional[MLModel]:
 def get_model_by_id(db: Session, model_id: uuid.UUID) -> Optional[MLModel]:
     """Get ML model by ID"""
     return db.query(MLModel).filter(MLModel.model_id == model_id).first()
+
+
+# =============================================================================
+# AUTH & USER OPERATIONS
+# =============================================================================
+
+def get_user_by_username(db: Session, username: str) -> Optional[User]:
+    """Get user by username"""
+    return db.query(User).filter(User.username == username).first()
+
+
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    """Get user by email"""
+    return db.query(User).filter(User.email == email).first()
+
+
+def get_user_by_id(db: Session, user_id: uuid.UUID) -> Optional[User]:
+    """Get user by UUID"""
+    return db.query(User).filter(User.user_id == user_id).first()
+
+
+def create_user(db: Session, user_data: dict) -> User:
+    """Create a new user."""
+    user = User(**user_data)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_last_login(db: Session, user_id: uuid.UUID) -> Optional[User]:
+    """Update user's last successful login time and reset failed attempts."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        return None
+    user.last_login = datetime.utcnow()
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def increment_failed_login_attempts(
+    db: Session,
+    user_id: uuid.UUID,
+    lock_until: Optional[datetime] = None
+) -> Optional[User]:
+    """Increment failed login counter and optionally lock account."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        return None
+    user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+    if lock_until:
+        user.locked_until = lock_until
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def reset_failed_login_attempts(db: Session, user_id: uuid.UUID) -> Optional[User]:
+    """Reset failed login counter and unlock account."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        return None
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_password(
+    db: Session,
+    user_id: uuid.UUID,
+    password_hash: str
+) -> Optional[User]:
+    """Update user password hash and password-changed timestamp."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        return None
+    user.password_hash = password_hash
+    user.password_changed_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def create_auth_session(db: Session, session_data: dict) -> AuthSession:
+    """Create refresh-token backed auth session."""
+    session = AuthSession(**session_data)
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+def get_auth_session_by_id(db: Session, session_id: uuid.UUID) -> Optional[AuthSession]:
+    """Get auth session by session ID."""
+    return db.query(AuthSession).filter(AuthSession.session_id == session_id).first()
+
+
+def get_auth_session_by_refresh_hash(db: Session, refresh_token_hash: str) -> Optional[AuthSession]:
+    """Get auth session by stored refresh token hash."""
+    return db.query(AuthSession).filter(AuthSession.refresh_token_hash == refresh_token_hash).first()
+
+
+def mark_auth_session_used(db: Session, session_id: uuid.UUID) -> Optional[AuthSession]:
+    """Update last-used timestamp for session activity tracking."""
+    session = get_auth_session_by_id(db, session_id)
+    if not session:
+        return None
+    session.last_used_at = datetime.utcnow()
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+def revoke_auth_session(
+    db: Session,
+    session_id: uuid.UUID,
+    reason: Optional[str] = None
+) -> Optional[AuthSession]:
+    """Revoke a single auth session."""
+    session = get_auth_session_by_id(db, session_id)
+    if not session:
+        return None
+    session.revoked_at = datetime.utcnow()
+    session.revoke_reason = reason
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+def rotate_auth_session(
+    db: Session,
+    old_session_id: uuid.UUID,
+    new_session_data: dict,
+    revoke_reason: str = "rotated"
+) -> Optional[AuthSession]:
+    """Rotate refresh session by revoking old and creating a replacement."""
+    old_session = get_auth_session_by_id(db, old_session_id)
+    if not old_session:
+        return None
+
+    old_session.revoked_at = datetime.utcnow()
+    old_session.revoke_reason = revoke_reason
+
+    # Keep family lineage unless explicitly overridden.
+    if "token_family" not in new_session_data:
+        new_session_data["token_family"] = old_session.token_family
+
+    new_session = AuthSession(**new_session_data)
+    db.add(new_session)
+    db.flush()
+    old_session.replaced_by_session_id = new_session.session_id
+    db.commit()
+    db.refresh(new_session)
+    return new_session
+
+
+def revoke_all_auth_sessions_for_user(
+    db: Session,
+    user_id: uuid.UUID,
+    reason: str = "logout_all"
+) -> int:
+    """Revoke all active sessions for a user."""
+    active_sessions = db.query(AuthSession).filter(
+        and_(
+            AuthSession.user_id == user_id,
+            AuthSession.revoked_at.is_(None)
+        )
+    ).all()
+
+    now = datetime.utcnow()
+    for session in active_sessions:
+        session.revoked_at = now
+        session.revoke_reason = reason
+    db.commit()
+    return len(active_sessions)
+
+
+def revoke_auth_sessions_by_family(
+    db: Session,
+    token_family: uuid.UUID,
+    reason: str = "family_revoked"
+) -> int:
+    """Revoke all active sessions in the same token family."""
+    active_sessions = db.query(AuthSession).filter(
+        and_(
+            AuthSession.token_family == token_family,
+            AuthSession.revoked_at.is_(None)
+        )
+    ).all()
+
+    now = datetime.utcnow()
+    for session in active_sessions:
+        session.revoked_at = now
+        session.revoke_reason = reason
+    db.commit()
+    return len(active_sessions)
+
+
+def create_audit_log(db: Session, log_data: dict) -> AuditLog:
+    """Write an audit event."""
+    log_entry = AuditLog(**log_data)
+    db.add(log_entry)
+    db.commit()
+    db.refresh(log_entry)
+    return log_entry
 
 
 # =============================================================================

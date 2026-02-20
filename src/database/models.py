@@ -2,19 +2,15 @@
 SQLAlchemy ORM models for database tables
 """
 from datetime import datetime, date
-from typing import Optional
+from enum import Enum
 from sqlalchemy import (
-    Column, String, Integer, Float, Date, DateTime, Boolean, 
-    Text, ForeignKey, CheckConstraint, Enum as SQLEnum, JSON
+    Column, String, Integer, Float, Date, DateTime, Boolean,
+    Text, ForeignKey, JSON
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship
 import uuid
 from src.database.connection import Base
-from sqlalchemy.orm import relationship
-
-from enum import Enum
-from sqlalchemy import Enum as SqlEnum
 
 
 
@@ -256,11 +252,64 @@ class User(Base):
     full_name = Column(String(200), nullable=False)
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime)
+    failed_login_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime)
+    password_changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Relationships
+    auth_sessions = relationship("AuthSession", back_populates="user", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="user")
+    uploads = relationship("UploadHistory", back_populates="user")
+
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    session_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.user_id', ondelete='CASCADE'), nullable=False, index=True)
+    refresh_token_hash = Column(String(255), unique=True, nullable=False)
+    token_family = Column(UUID(as_uuid=True), default=uuid.uuid4, nullable=False, index=True)
+    replaced_by_session_id = Column(UUID(as_uuid=True), ForeignKey('auth_sessions.session_id'))
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime)
+    revoke_reason = Column(String(255))
+    user_agent = Column(String(500))
+    ip_address = Column(INET)
+    last_used_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="auth_sessions", foreign_keys=[user_id])
+    replaced_by = relationship("AuthSession", remote_side=[session_id], uselist=False)
+
+    def __repr__(self):
+        return f"<AuthSession {self.session_id} user={self.user_id}>"
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_log"
+
+    log_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.user_id'))
+    action = Column(String(100), nullable=False)
+    table_name = Column(String(100))
+    record_id = Column(UUID(as_uuid=True))
+    old_values = Column(JSON)
+    new_values = Column(JSON)
+    ip_address = Column(INET)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="audit_logs")
+
+    def __repr__(self):
+        return f"<AuditLog {self.action} at {self.created_at}>"
 
 
 class UploadHistory(Base):
@@ -277,6 +326,9 @@ class UploadHistory(Base):
     status = Column(String(50), default='processing')
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     processed_at = Column(DateTime)
+
+    # Relationships
+    user = relationship("User", back_populates="uploads")
 
     def __repr__(self):
         return f"<UploadHistory {self.file_name} - {self.status}>"

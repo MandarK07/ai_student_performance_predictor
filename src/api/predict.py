@@ -7,11 +7,13 @@ import joblib
 import pandas as pd
 from typing import Optional
 
+from src.auth.dependencies import require_roles
 from src.database.connection import get_db
 from src.database import crud
 from src.features.preprocess import preprocess_data
 
 router = APIRouter()
+PREDICTION_ROLES = ("admin", "teacher", "counselor")
 
 INTERVENTION_TYPE_MAP = {
     "Academic Support": "Tutoring",
@@ -58,7 +60,11 @@ class PredictionResponse(BaseModel):
     prediction_date: datetime
 
 @router.post("/predict", response_model=PredictionResponse)
-async def predict(features: StudentFeatures, db: Session = Depends(get_db)):
+async def predict(
+    features: StudentFeatures,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*PREDICTION_ROLES))
+):
     """
     Generate performance prediction for a student and save to database
     """
@@ -210,7 +216,11 @@ async def predict(features: StudentFeatures, db: Session = Depends(get_db)):
 
 
 @router.get("/predictions/{student_code}")
-async def get_student_predictions(student_code: str, db: Session = Depends(get_db)):
+async def get_student_predictions(
+    student_code: str,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*PREDICTION_ROLES))
+):
     """
     Get all predictions for a specific student
     """
@@ -236,7 +246,10 @@ async def get_student_predictions(student_code: str, db: Session = Depends(get_d
 
 
 @router.get("/at-risk-students")
-async def get_at_risk_students(db: Session = Depends(get_db)):
+async def get_at_risk_students(
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*PREDICTION_ROLES))
+):
     """
     Get list of students at high or critical risk
     """

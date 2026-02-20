@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager
 from src.api.predict import router as predict_router
 from src.api.upload import router as upload_router
 from src.api.students import router as students_router
+from src.api.auth import router as auth_router
+from src.auth.bootstrap import ensure_admin_user
 from src.database.connection import test_connection
 
 
@@ -16,13 +18,14 @@ from src.database.connection import test_connection
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events"""
     # Startup
-    print("🚀 Starting AI Student Performance Predictor...")
+    print("ðŸš€ Starting AI Student Performance Predictor...")
     
     # Test database connection
     if test_connection():
-        print("✅ Database connection successful")
+        print("Database connection successful")
+        ensure_admin_user()
     else:
-        print("⚠️  Database connection failed - some features may not work")
+        print("Database connection failed - some features may not work")
     
     # Create upload directory if it doesn't exist
     os.makedirs("data/uploads", exist_ok=True)
@@ -30,7 +33,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    print("👋 Shutting down...")
+    print("ðŸ‘‹ Shutting down...")
 
 
 app = FastAPI(
@@ -53,6 +56,7 @@ app.add_middleware(
 app.include_router(predict_router, prefix="/api", tags=["Predictions"])
 app.include_router(upload_router, prefix="/api", tags=["Data Upload"])
 app.include_router(students_router, prefix="/api", tags=["Students"])
+app.include_router(auth_router, prefix="/api", tags=["Authentication"])
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -108,29 +112,29 @@ def home():
         </head>
         <body>
             <div class="container">
-                <h1>📊 Student Performance Predictor</h1>
+                <h1>ðŸ“Š Student Performance Predictor</h1>
                 <p>AI-powered analytics for academic success forecasting</p>
                 
                 <div>
-                    <a href="/docs">📚 API Documentation</a>
-                    <a href="http://localhost:5173" target="_blank">🎯 Open Dashboard</a>
+                    <a href="/docs">ðŸ“š API Documentation</a>
+                    <a href="http://localhost:5173" target="_blank">ðŸŽ¯ Open Dashboard</a>
                 </div>
                 
                 <div class="features">
                     <div class="feature">
-                        <h3>🤖 ML Predictions</h3>
+                        <h3>ðŸ¤– ML Predictions</h3>
                         <p>Advanced Random Forest models</p>
                     </div>
                     <div class="feature">
-                        <h3>💾 Database</h3>
+                        <h3>ðŸ’¾ Database</h3>
                         <p>PostgreSQL with full tracking</p>
                     </div>
                     <div class="feature">
-                        <h3>📁 Batch Upload</h3>
+                        <h3>ðŸ“ Batch Upload</h3>
                         <p>CSV bulk processing</p>
                     </div>
                     <div class="feature">
-                        <h3>⚠️ Risk Detection</h3>
+                        <h3>âš ï¸ Risk Detection</h3>
                         <p>Early intervention alerts</p>
                     </div>
                 </div>
@@ -168,3 +172,4 @@ if __name__ == "__main__":
 
 
 # python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+

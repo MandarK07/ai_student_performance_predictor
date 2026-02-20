@@ -6,6 +6,7 @@ from io import BytesIO
 from datetime import datetime
 import joblib
 
+from src.auth.dependencies import require_roles
 from src.database.connection import get_db
 from src.database import crud
 from src.features.preprocess import preprocess_data
@@ -30,6 +31,7 @@ def clean_for_json(obj):
 
 
 router = APIRouter()
+UPLOAD_ROLES = ("admin", "teacher", "counselor")
 
 REQUIRED_COLUMNS = {
     "student_code", "gender", "age", "parent_education", "attendance_rate",
@@ -49,7 +51,11 @@ except:
 
 
 @router.post("/upload-csv")
-async def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*UPLOAD_ROLES))
+):
     """
     Upload CSV file with student data and generate batch predictions
     """
@@ -244,7 +250,10 @@ async def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
 
 
 @router.get("/upload-history")
-async def get_upload_history(db: Session = Depends(get_db)):
+async def get_upload_history(
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*UPLOAD_ROLES))
+):
     """
     Get history of CSV uploads
     """

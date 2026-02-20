@@ -5,11 +5,15 @@ from pydantic import BaseModel, Field, EmailStr
 from datetime import date, datetime
 from typing import List, Optional
 
+from src.auth.dependencies import require_roles
 from src.database.connection import get_db
 from src.database import crud
 from src.database.models import Student
 
 router = APIRouter()
+
+READ_ROLES = ("admin", "teacher", "counselor")
+WRITE_ROLES = ("admin", "teacher")
 
 
 class StudentCreate(BaseModel):
@@ -197,7 +201,11 @@ def _build_student_profile_payload(student: Student, db: Session):
 
 
 @router.post("/students", response_model=StudentResponse, status_code=201)
-async def create_student(student: StudentCreate, db: Session = Depends(get_db)):
+async def create_student(
+    student: StudentCreate,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*WRITE_ROLES))
+):
     """
     Create a new student record
     """
@@ -236,7 +244,8 @@ async def get_students(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     status: Optional[str] = Query(None, pattern="^(active|inactive|graduated|suspended)$"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*READ_ROLES))
 ):
     """
     Get list of students with pagination
@@ -262,7 +271,8 @@ async def get_students(
 @router.get("/students/search")
 async def search_students(
     q: str = Query(..., min_length=2, description="Search term"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*READ_ROLES))
 ):
     """
     Search students by name, email, or student code
@@ -281,7 +291,11 @@ async def search_students(
 
 
 @router.get("/students/{student_code}", response_model=StudentResponse)
-async def get_student(student_code: str, db: Session = Depends(get_db)):
+async def get_student(
+    student_code: str,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*READ_ROLES))
+):
     """
     Get student details by student code
     """
@@ -304,7 +318,11 @@ async def get_student(student_code: str, db: Session = Depends(get_db)):
 
 
 @router.get("/students/{student_code}/performance")
-async def get_student_performance(student_code: str, db: Session = Depends(get_db)):
+async def get_student_performance(
+    student_code: str,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*READ_ROLES))
+):
     """
     Get comprehensive performance data for a student
     """
@@ -344,7 +362,11 @@ async def get_student_performance(student_code: str, db: Session = Depends(get_d
 
 
 @router.get("/students/{student_code}/profile")
-async def get_student_profile(student_code: str, db: Session = Depends(get_db)):
+async def get_student_profile(
+    student_code: str,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*READ_ROLES))
+):
     """
     Get detailed student profile from the database:
     academic metrics, prediction history, and recommendation feed.
@@ -359,7 +381,8 @@ async def get_student_profile(student_code: str, db: Session = Depends(get_db)):
 async def update_student(
     student_code: str,
     student_update: StudentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*WRITE_ROLES))
 ):
     """
     Update student information
@@ -386,7 +409,11 @@ async def update_student(
 
 
 @router.delete("/students/{student_code}", status_code=204)
-async def delete_student(student_code: str, db: Session = Depends(get_db)):
+async def delete_student(
+    student_code: str,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_roles(*WRITE_ROLES))
+):
     """
     Deactivate a student (soft delete)
     """

@@ -172,8 +172,28 @@ CREATE TABLE users (
     full_name VARCHAR(200) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP,
+    failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until TIMESTAMP,
+    password_changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Authentication sessions (refresh token persistence and rotation)
+CREATE TABLE auth_sessions (
+    session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    refresh_token_hash VARCHAR(255) UNIQUE NOT NULL,
+    token_family UUID NOT NULL DEFAULT uuid_generate_v4(),
+    replaced_by_session_id UUID REFERENCES auth_sessions(session_id),
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP,
+    revoke_reason VARCHAR(255),
+    user_agent VARCHAR(500),
+    ip_address INET,
+    last_used_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Audit log for tracking changes
@@ -233,6 +253,11 @@ CREATE INDEX idx_interventions_status ON interventions(status);
 
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_locked_until ON users(locked_until);
+CREATE INDEX idx_auth_sessions_user_id ON auth_sessions(user_id);
+CREATE INDEX idx_auth_sessions_token_family ON auth_sessions(token_family);
+CREATE INDEX idx_auth_sessions_expires_at ON auth_sessions(expires_at);
+CREATE INDEX idx_auth_sessions_revoked_at ON auth_sessions(revoked_at);
 
 CREATE INDEX idx_audit_user ON audit_log(user_id);
 CREATE INDEX idx_audit_created ON audit_log(created_at);
@@ -259,6 +284,9 @@ CREATE TRIGGER update_interventions_updated_at BEFORE UPDATE ON interventions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_auth_sessions_updated_at BEFORE UPDATE ON auth_sessions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================================================
