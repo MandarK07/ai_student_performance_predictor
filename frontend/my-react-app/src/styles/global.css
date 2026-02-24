@@ -34,19 +34,7 @@ html, body, #root {
 }
 
 /* Navbar */
-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 2rem;
-  background-color: var(--navbar-bg);
-  border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  height: 70px;
-  width: 100%;
-}
+/* Using component-based styling instead of global nav styles */
 
 .nav-left {
   display: flex;
@@ -99,17 +87,7 @@ nav {
   overflow: hidden;
 }
 
-.sidebar {
-  width: 280px;
-  background-color: var(--sidebar-bg);
-  border-right: 1px solid var(--border-color);
-  padding: 2rem 1.5rem;
-  height: calc(100vh - 70px);
-  position: sticky;
-  top: 70px;
-  transition: transform 0.3s ease;
-  z-index: 900;
-}
+/* Sidebar component uses component-based styling */
 
 .sidebar-header {
   display: flex;
@@ -324,28 +302,6 @@ nav {
 
   .nav-links {
     display: none;
-  }
-
-  .sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    height: 100vh;
-    transform: translateX(-100%);
-    width: 280px;
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .close-sidebar {
-    display: block;
-  }
-
-  .sidebar-overlay.active {
-    display: block;
   }
 
   .hero-section h1 {

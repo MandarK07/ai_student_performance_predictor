@@ -1,4 +1,4 @@
-import { apiFetch, clearTokens, getAccessToken, getRefreshToken, setTokens } from "./http";
+import { apiFetch, clearTokens, getAccessToken, getRefreshToken, hasValidTokens, setTokens } from "./http";
 
 export type AuthUser = {
   user_id: string;
@@ -29,6 +29,13 @@ export type RegisterUserResponse = {
   created_at: string;
 };
 
+export type SignupRequest = {
+  username: string;
+  email: string;
+  password: string;
+  full_name: string;
+};
+
 export async function login(usernameOrEmail: string, password: string): Promise<void> {
   const response = await apiFetch("/auth/login", {
     method: "POST",
@@ -51,6 +58,9 @@ export async function fetchCurrentUser(): Promise<AuthUser> {
   const response = await apiFetch("/auth/me", { method: "GET" });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 401) {
+      clearTokens();
+    }
     throw new Error(payload.detail || "Failed to load user");
   }
   return payload;
@@ -72,7 +82,7 @@ export async function logout(): Promise<void> {
 }
 
 export function isAuthenticated(): boolean {
-  return Boolean(getAccessToken() && getRefreshToken());
+  return hasValidTokens() && Boolean(getAccessToken() && getRefreshToken());
 }
 
 export async function registerUser(data: RegisterUserRequest): Promise<RegisterUserResponse> {
@@ -85,6 +95,20 @@ export async function registerUser(data: RegisterUserRequest): Promise<RegisterU
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(payload.detail || "User registration failed");
+  }
+  return payload;
+}
+
+export async function signupUser(data: SignupRequest): Promise<RegisterUserResponse> {
+  const response = await apiFetch("/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.detail || "Signup failed");
   }
   return payload;
 }

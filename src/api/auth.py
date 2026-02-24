@@ -40,6 +40,13 @@ class RegisterRequest(BaseModel):
     is_active: bool = True
 
 
+class SignupRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=255)
+    full_name: str = Field(..., min_length=2, max_length=200)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(..., min_length=10)
 
@@ -158,6 +165,64 @@ async def register_user(
         request,
         user_id=current_user.user_id,
         details={"created_user_id": str(new_user.user_id), "created_username": new_user.username},
+    )
+
+    return RegisterResponse(
+        user_id=str(new_user.user_id),
+        username=new_user.username,
+        email=new_user.email,
+        full_name=new_user.full_name,
+        role=new_user.role or "student",
+        is_active=new_user.is_active,
+        created_at=new_user.created_at,
+    )
+
+
+@router.post("/signup", response_model=RegisterResponse, status_code=201)
+async def signup_user(payload: SignupRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Public self-signup endpoint.
+    Security constraint: self-signup users are always created with `student` role.
+    """
+    existing_by_username = crud.get_user_by_username(db, payload.username.strip())
+    if existing_by_username:
+        _log_auth_event(
+            db,
+            "auth.signup.failed",
+            request,
+            details={"reason": "username_exists", "username": payload.username},
+        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
+
+    existing_by_email = crud.get_user_by_email(db, payload.email)
+    if existing_by_email:
+        _log_auth_event(
+            db,
+            "auth.signup.failed",
+            request,
+            details={"reason": "email_exists", "email": payload.email},
+        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
+
+    new_user = crud.create_user(
+        db,
+        {
+            "username": payload.username.strip(),
+            "email": payload.email,
+            "password_hash": hash_password(payload.password),
+            "role": "student",
+            "full_name": payload.full_name.strip(),
+            "is_active": True,
+            "password_changed_at": datetime.utcnow(),
+        },
+    )
+
+    _log_auth_event(
+        db,
+        "auth.signup.success",
+        request,
+        user_id=new_user.user_id,
+        details={"username": new_user.username},
     )
 
     return RegisterResponse(

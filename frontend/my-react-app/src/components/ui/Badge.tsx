@@ -1,27 +1,33 @@
-import type { ReactNode } from "react";
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "../../lib/utils";
 
-type BadgeVariant = "low" | "medium" | "high" | "success" | "warning" | "danger" | "info";
+const badgeVariants = cva("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide", {
+  variants: {
+    variant: {
+      low: "bg-emerald-100 text-emerald-700",
+      medium: "bg-amber-100 text-amber-700",
+      high: "bg-red-100 text-red-700",
+      success: "bg-emerald-100 text-emerald-700",
+      warning: "bg-amber-100 text-amber-700",
+      danger: "bg-red-100 text-red-700",
+      info: "bg-indigo-100 text-indigo-700",
+      secondary: "bg-slate-100 text-slate-700",
+      outline: "border border-slate-200 bg-white text-slate-700",
+    },
+  },
+  defaultVariants: {
+    variant: "info",
+  },
+});
 
-type BadgeProps = {
-  children: ReactNode;
-  variant?: BadgeVariant;
-  className?: string;
-};
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
 
-const badgeClasses: Record<BadgeVariant, string> = {
-  low: "bg-emerald-100 text-emerald-700",
-  medium: "bg-amber-100 text-amber-700",
-  high: "bg-red-100 text-red-700",
-  success: "bg-emerald-100 text-emerald-700",
-  warning: "bg-amber-100 text-amber-700",
-  danger: "bg-red-100 text-red-700",
-  info: "bg-indigo-100 text-indigo-700",
-};
+const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(({ className, variant, ...props }, ref) => {
+  return <div ref={ref} className={cn(badgeVariants({ variant }), className)} {...props} />;
+});
 
-export default function Badge({ children, variant = "info", className = "" }: BadgeProps) {
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide ${badgeClasses[variant]} ${className}`}>
-      {children}
-    </span>
-  );
-}
+Badge.displayName = "Badge";
+
+export { Badge, badgeVariants };
+export default Badge;

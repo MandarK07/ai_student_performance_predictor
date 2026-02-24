@@ -18,7 +18,7 @@ from src.database.connection import test_connection
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events"""
     # Startup
-    print("ðŸš€ Starting AI Student Performance Predictor...")
+    print("Starting AI Student Performance Predictor...")
     
     # Test database connection
     if test_connection():
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    print("ðŸ‘‹ Shutting down...")
+    print("Shutting down...")
 
 
 app = FastAPI(
@@ -112,29 +112,29 @@ def home():
         </head>
         <body>
             <div class="container">
-                <h1>ðŸ“Š Student Performance Predictor</h1>
+                <h1>Student Performance Predictor</h1>
                 <p>AI-powered analytics for academic success forecasting</p>
                 
                 <div>
-                    <a href="/docs">ðŸ“š API Documentation</a>
-                    <a href="http://localhost:5173" target="_blank">ðŸŽ¯ Open Dashboard</a>
+                    <a href="/docs">📚 API Documentation</a>
+                    <a href="http://localhost:5173" target="_blank">🎯 Open Dashboard</a>
                 </div>
                 
                 <div class="features">
                     <div class="feature">
-                        <h3>ðŸ¤– ML Predictions</h3>
+                        <h3>🤖 ML Predictions</h3>
                         <p>Advanced Random Forest models</p>
                     </div>
                     <div class="feature">
-                        <h3>ðŸ’¾ Database</h3>
+                        <h3>💾 Database</h3>
                         <p>PostgreSQL with full tracking</p>
                     </div>
                     <div class="feature">
-                        <h3>ðŸ“ Batch Upload</h3>
+                        <h3>📊 Batch Upload</h3>
                         <p>CSV bulk processing</p>
                     </div>
                     <div class="feature">
-                        <h3>âš ï¸ Risk Detection</h3>
+                        <h3>⚠️ Risk Detection</h3>
                         <p>Early intervention alerts</p>
                     </div>
                 </div>

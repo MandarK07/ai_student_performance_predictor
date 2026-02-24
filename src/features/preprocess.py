@@ -1,5 +1,16 @@
 import pandas as pd
-import numpy as np
+
+
+def _fill_numeric_with_stat(df: pd.DataFrame, col: str, stat: str) -> None:
+    """Fill NaN in numeric column using mean/median, safely handling all-NaN data."""
+    series = pd.to_numeric(df[col], errors="coerce")
+
+    if series.notna().any():
+        fill_value = series.median() if stat == "median" else series.mean()
+    else:
+        fill_value = 0
+
+    df[col] = series.fillna(fill_value)
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -19,19 +30,11 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in numeric_fill_median:
         if col in df.columns:
-            # fillna with median, fallback to 0 if median is NaN (all values missing)
-            median_val = df[col].median()
-            if pd.isna(median_val):
-                median_val = 0
-            df[col] = df[col].fillna(median_val)
+            _fill_numeric_with_stat(df, col, "median")
 
     for col in numeric_fill_mean:
         if col in df.columns:
-            # fillna with mean, fallback to 0 if mean is NaN (all values missing)
-            mean_val = df[col].mean()
-            if pd.isna(mean_val):
-                mean_val = 0
-            df[col] = df[col].fillna(mean_val)
+            _fill_numeric_with_stat(df, col, "mean")
 
     # Special handling for participation and late submissions
     if "class_participation" in df.columns:

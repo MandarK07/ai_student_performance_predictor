@@ -23,6 +23,36 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) {
+      return true;
+    }
+    const decoded = atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(decoded) as { exp?: number };
+    if (!payload.exp) {
+      return false;
+    }
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
+export function hasValidTokens(): boolean {
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+  if (!accessToken || !refreshToken) {
+    return false;
+  }
+  if (isTokenExpired(accessToken) || isTokenExpired(refreshToken)) {
+    clearTokens();
+    return false;
+  }
+  return true;
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {

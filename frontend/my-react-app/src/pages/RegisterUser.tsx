@@ -1,25 +1,25 @@
 import { useState } from "react";
-import { registerUser, type RegisterUserRequest, type RegisterUserResponse } from "../api/auth";
+import { signupUser, type RegisterUserResponse, type SignupRequest } from "../api/auth";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import { Link, useNavigate } from "react-router-dom";
 
-const initialForm: RegisterUserRequest = {
+const initialForm: SignupRequest = {
   username: "",
   email: "",
   password: "",
   full_name: "",
-  role: "teacher",
-  is_active: true,
 };
 
 export default function RegisterUser() {
-  const [formData, setFormData] = useState<RegisterUserRequest>(initialForm);
+  const [formData, setFormData] = useState<SignupRequest>(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RegisterUserResponse | null>(null);
+  const navigate = useNavigate();
 
-  const handleChange = (field: keyof RegisterUserRequest, value: string | boolean) => {
+  const handleChange = (field: keyof SignupRequest, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -30,11 +30,12 @@ export default function RegisterUser() {
     setResult(null);
 
     try {
-      const response = await registerUser(formData);
+      const response = await signupUser(formData);
       setResult(response);
-      setFormData({ ...initialForm, role: formData.role });
+      setFormData(initialForm);
+      setTimeout(() => navigate("/login"), 1000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
       setSubmitting(false);
     }
@@ -43,12 +44,12 @@ export default function RegisterUser() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Register User</h1>
-        <p className="text-sm text-slate-500">Admin-only form to create new users.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Create Account</h1>
+        <p className="text-sm text-slate-500">Sign up to access the student analytics platform.</p>
       </div>
 
       <Card>
-        <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+        <form onSubmit={handleSubmit} className="grid gap-4">
           <input
             value={formData.username}
             onChange={(e) => handleChange("username", e.target.value)}
@@ -82,30 +83,16 @@ export default function RegisterUser() {
             minLength={2}
             className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-brand-200 transition focus:border-brand-400 focus:ring-2"
           />
-          <select
-            value={formData.role}
-            onChange={(e) => handleChange("role", e.target.value as RegisterUserRequest["role"])}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-brand-200 transition focus:border-brand-400 focus:ring-2"
-          >
-            <option value="admin">Admin</option>
-            <option value="teacher">Teacher</option>
-            <option value="counselor">Counselor</option>
-            <option value="student">Student</option>
-            <option value="parent">Parent</option>
-          </select>
-          <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={Boolean(formData.is_active)}
-              onChange={(e) => handleChange("is_active", e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-            />
-            Active account
-          </label>
-          <div className="md:col-span-2">
+          <div>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating..." : "Create User"}
+              {submitting ? "Creating..." : "Sign Up"}
             </Button>
+            <p className="mt-3 text-sm text-slate-500">
+              Already have an account?{" "}
+              <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700">
+                Sign In
+              </Link>
+            </p>
           </div>
         </form>
       </Card>
@@ -119,10 +106,8 @@ export default function RegisterUser() {
 
       {result && (
         <Card className="border-l-4 border-l-emerald-500">
-          <Badge variant="success">User Created</Badge>
-          <p className="mt-2 text-sm text-slate-700">
-            {result.username} ({result.role}) - {result.email}
-          </p>
+          <Badge variant="success">Account Created</Badge>
+          <p className="mt-2 text-sm text-slate-700">Welcome {result.full_name}. Redirecting to sign-in...</p>
         </Card>
       )}
     </div>
