@@ -63,7 +63,7 @@ export default function InputForm({ onSubmit }: Props) {
 
       <input className={inputClass} type="number" step="0.01" {...register("previous_gpa", { required: true, min: 0, max: 4, valueAsNumber: true })} placeholder="Previous GPA (0-4)" />
 
-      <input className={inputClass} type="number" step="0.01" {...register("final_grade", { required: true, min: 0, max: 100, valueAsNumber: true })} placeholder="Final Grade" />
+      <input className={inputClass} type="number" step="1" {...register("final_grade", { required: true, min: 0, max: 100, valueAsNumber: true })} placeholder="Final Grade" />
 
       <input
         className={inputClass}

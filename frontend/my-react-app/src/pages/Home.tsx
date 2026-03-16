@@ -2,6 +2,7 @@ import { ArrowRight, BarChart3, BookOpen, Brain, Calendar, Database, GraduationC
 import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+// import logo from '../assets/logo.png'
 
 // Reusable Components
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -17,7 +18,12 @@ const HeroSection = () => (
   <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 py-20">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-800/30 to-transparent"></div>
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="mb-12 flex items-center">
+      <div className="mb-12 flex items-center gap-3">
+        <img
+          src="/logo.png"
+          alt="AI EduPredict logo"
+          className="h-12 w-12 rounded-xl shadow-lg ring-2 ring-white/30 bg-white/10 backdrop-blur"
+        />
         <div className="text-2xl font-bold text-white">AI EduPredict</div>
       </div>
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
