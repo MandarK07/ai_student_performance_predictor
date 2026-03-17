@@ -16,8 +16,8 @@ const SectionSubtitle = ({ children }: { children: React.ReactNode }) => (
 // Hero Section Component
 const HeroSection = () => (
   <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 py-20">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-800/30 to-transparent"></div>
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-800/30 to-transparent"></div>
+    <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-12 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <img
