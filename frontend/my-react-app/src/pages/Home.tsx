@@ -18,8 +18,27 @@ const HeroSection = () => (
   <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 py-20">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-800/30 to-transparent"></div>
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="mb-12 flex items-center">
-        <div className="text-2xl font-bold text-white">AI EduPredict</div>
+      <div className="mb-12 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <img
+            src="/logo.png"
+            alt="AI EduPredict logo"
+            className="h-12 w-12 rounded-xl shadow-lg ring-2 ring-white/30 bg-white/10 backdrop-blur"
+          />
+          <div className="text-2xl font-bold text-white">AI EduPredict</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link to="/login">
+            <Button variant="secondary" className="bg-white/10 text-white border-white/30 hover:bg-white/20">
+              Sign In
+            </Button>
+          </Link>
+          <Link to="/register-user">
+            <Button className="bg-white text-blue-900 hover:bg-blue-50">
+              Sign Up
+            </Button>
+          </Link>
+        </div>
       </div>
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         {/* Left Content */}
@@ -45,18 +64,6 @@ const HeroSection = () => (
             <Button variant="outline" className="border-white text-white hover:bg-white/10">
               See How It Works
             </Button>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link to="/login">
-              <Button variant="secondary" className="bg-blue-100 text-blue-900 hover:bg-white">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/register-user">
-              <Button className="bg-indigo-500 text-white hover:bg-indigo-600">
-                Create Account
-              </Button>
-            </Link>
           </div>
         </div>
         
