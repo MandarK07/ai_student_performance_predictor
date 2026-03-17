@@ -28,19 +28,19 @@ const HeroSection = () => (
           <div className="text-2xl font-bold text-white">AI EduPredict</div>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/login">
-            <Button
-              variant="outline"
-              className="border-white/40 text-white hover:-translate-y-0.5 hover:bg-white/15 transition-all duration-200"
-            >
-              Sign In
-            </Button>
-          </Link>
-          <Link to="/register-user">
-            <Button className="bg-white text-blue-900 hover:-translate-y-0.5 hover:bg-blue-50 transition-all duration-200 shadow-lg shadow-blue-900/20">
-              Sign Up
-            </Button>
-          </Link>
+          <Button
+            asChild
+            variant="outline"
+            className="border-white/40 text-white hover:-translate-y-0.5 hover:bg-white/15 transition-all duration-200"
+          >
+            <Link to="/login">Sign In</Link>
+          </Button>
+          <Button
+            asChild
+            className="bg-white text-blue-900 hover:-translate-y-0.5 hover:bg-blue-50 transition-all duration-200 shadow-lg shadow-blue-900/20"
+          >
+            <Link to="/register-user">Sign Up</Link>
+          </Button>
         </div>
       </div>
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
