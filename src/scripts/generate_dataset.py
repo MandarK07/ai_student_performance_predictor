@@ -14,9 +14,15 @@ def generate_student_dataset(num_students=1000):
     """
     Generate realistic student performance data
     """
-    
+
+    # Derive current Indian academic year (July–June cycle)
+    today = datetime.now()
+    start_year = today.year if today.month >= 7 else today.year - 1
+    academic_year_value = f"{start_year}-{start_year + 1}"
+    semesters = ["Odd", "Even"]
+
     # Define realistic value ranges and distributions
-    genders = ['Male', 'Female']
+    genders = ['Male', 'Female', 'Other']
     parent_education_levels = [
         'High School', 'Some College', 'Associate Degree', 
         'Bachelor Degree', 'Master Degree', 'Doctorate'
@@ -28,11 +34,11 @@ def generate_student_dataset(num_students=1000):
     data = []
     
     for i in range(num_students):
-        student_code = f"S{2024000 + i + 1}"
+        student_code = f"{start_year}{(i + 1):05d}"
         
         # Basic demographics
         gender = random.choice(genders)
-        age = random.randint(16, 25)
+        age = random.randint(17, 26)
         parent_education = random.choices(parent_education_levels, weights=education_weights)[0]
         
         # Parent education influences base performance
@@ -44,7 +50,8 @@ def generate_student_dataset(num_students=1000):
             'Master Degree': 0.4,
             'Doctorate': 0.5
         }
-        base_performance = 2.0 + edu_impact[parent_education]
+        # Base performance now centered around 6 on a 0-10 GPA scale
+        base_performance = 6.0 + (edu_impact[parent_education] * 2)
         
         # Attendance rate (70-100%) - normally distributed
         attendance_rate = np.clip(np.random.normal(85, 10), 70, 100)
@@ -57,16 +64,16 @@ def generate_student_dataset(num_students=1000):
         study_factor = study_hours / 40
         
         previous_gpa_sem1 = np.clip(
-            base_performance + 
-            attendance_factor * 0.8 + 
-            study_factor * 0.6 + 
-            np.random.normal(0, 0.3),
-            0, 4.0
+            base_performance +
+            attendance_factor * 1.2 +
+            study_factor * 1.0 +
+            np.random.normal(0, 0.5),
+            0, 10.0
         )
-        
+
         previous_gpa_sem2 = np.clip(
-            previous_gpa_sem1 + np.random.normal(0, 0.2),
-            0, 4.0
+            previous_gpa_sem1 + np.random.normal(0, 0.4),
+            0, 10.0
         )
         
         previous_gpa = (previous_gpa_sem1 + previous_gpa_sem2) / 2
@@ -88,9 +95,9 @@ def generate_student_dataset(num_students=1000):
         
         # Exam scores (similar pattern but slightly different)
         exam_score_avg = np.clip(
-            55 + 
-            (study_hours * 0.9) + 
-            (previous_gpa * 8) + 
+            55 +
+            (study_hours * 0.9) +
+            (previous_gpa * 4) +
             np.random.normal(0, 10),
             0, 100
         )
@@ -113,12 +120,12 @@ def generate_student_dataset(num_students=1000):
         # Additional fields for enriched dataset
         first_name = generate_first_name(gender)
         last_name = generate_last_name()
-        email = f"{first_name.lower()}.{last_name.lower()}@student.edu"
-        enrollment_date = (datetime.now() - timedelta(days=random.randint(365, 1460))).strftime('%Y-%m-%d')
+        email = f"{first_name.lower()}.{last_name.lower()}@student.in"
+        enrollment_date = (today - timedelta(days=random.randint(365, 1460))).strftime('%Y-%m-%d')
         
         # Academic info
-        academic_year = "2023-2024"
-        semester = random.choice(["Fall", "Spring"])
+        academic_year = academic_year_value
+        semester = random.choice(semesters)
         
         data.append({
             'student_code': student_code,
@@ -147,39 +154,35 @@ def generate_student_dataset(num_students=1000):
 
 
 def generate_first_name(gender):
-    """Generate realistic first names"""
+    """Generate realistic first names (Indian context)"""
     male_names = [
-        'James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 
-        'Joseph', 'Thomas', 'Christopher', 'Daniel', 'Matthew', 'Anthony', 
-        'Mark', 'Donald', 'Steven', 'Andrew', 'Paul', 'Joshua', 'Kevin',
-        'Brian', 'George', 'Timothy', 'Ronald', 'Edward', 'Jason', 'Jeffrey',
-        'Ryan', 'Jacob', 'Nicholas', 'Eric', 'Jonathan', 'Stephen', 'Larry',
-        'Justin', 'Scott', 'Brandon', 'Benjamin', 'Samuel', 'Raymond'
+        'Aarav', 'Vivaan', 'Aditya', 'Vihaan', 'Arjun', 'Reyansh', 'Muhammad',
+        'Sai', 'Ishaan', 'Kabir', 'Rudra', 'Atharv', 'Anirudh', 'Krishna',
+        'Rohan', 'Rishi', 'Hrithik', 'Kunal', 'Sarthak', 'Yash'
     ]
     
     female_names = [
-        'Mary', 'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 
-        'Susan', 'Jessica', 'Sarah', 'Karen', 'Lisa', 'Nancy', 'Betty',
-        'Dorothy', 'Sandra', 'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle',
-        'Carol', 'Amanda', 'Melissa', 'Deborah', 'Stephanie', 'Rebecca', 
-        'Sharon', 'Laura', 'Cynthia', 'Amy', 'Kathleen', 'Angela', 'Shirley',
-        'Anna', 'Brenda', 'Pamela', 'Emma', 'Nicole', 'Helen', 'Samantha'
+        'Aadhya', 'Aarohi', 'Diya', 'Myra', 'Ananya', 'Ira', 'Pari', 'Navya',
+        'Saanvi', 'Anika', 'Ishita', 'Kiara', 'Meera', 'Ritika', 'Sneha',
+        'Tara', 'Vaishnavi', 'Zara', 'Aanya', 'Nandini'
     ]
+
+    neutral_names = ['Arya', 'Dev', 'Hari', 'Jai', 'Avi', 'Sam']
     
-    return random.choice(male_names if gender == 'Male' else female_names)
+    if gender == 'Male':
+        return random.choice(male_names)
+    if gender == 'Female':
+        return random.choice(female_names)
+    return random.choice(neutral_names)
 
 
 def generate_last_name():
-    """Generate realistic last names"""
+    """Generate realistic last names (Indian context)"""
     last_names = [
-        'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller',
-        'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez',
-        'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin',
-        'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark',
-        'Ramirez', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen', 'King',
-        'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green',
-        'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell',
-        'Carter', 'Roberts', 'Turner', 'Phillips', 'Evans', 'Parker', 'Collins'
+        'Sharma', 'Verma', 'Iyer', 'Reddy', 'Patel', 'Singh', 'Gupta', 'Kumar',
+        'Das', 'Nair', 'Bose', 'Chopra', 'Yadav', 'Rao', 'Pillai', 'Chowdhury',
+        'Sheikh', 'Khan', 'Dutta', 'Menon', 'Mehta', 'Mukherjee', 'Joshi',
+        'Kulkarni', 'Desai', 'Bhatt', 'Naidu', 'Mishra', 'Jain', 'Bhatia'
     ]
     return random.choice(last_names)
 
@@ -210,13 +213,13 @@ def generate_test_dataset(num_students=200):
     high_performers = df.sample(n=20)
     high_performers['attendance_rate'] = np.random.uniform(95, 100, 20)
     high_performers['study_hours'] = np.random.uniform(20, 35, 20)
-    high_performers['previous_gpa'] = np.random.uniform(3.5, 4.0, 20)
+    high_performers['previous_gpa'] = np.random.uniform(8.5, 10.0, 20)
     
     # At-risk students
     at_risk = df.sample(n=20)
     at_risk['attendance_rate'] = np.random.uniform(60, 75, 20)
     at_risk['study_hours'] = np.random.uniform(0, 8, 20)
-    at_risk['previous_gpa'] = np.random.uniform(1.0, 2.0, 20)
+    at_risk['previous_gpa'] = np.random.uniform(2.0, 5.0, 20)
     at_risk['late_submissions'] = np.random.randint(8, 20, 20)
     
     return df

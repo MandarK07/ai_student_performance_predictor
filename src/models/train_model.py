@@ -8,26 +8,26 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     roc_auc_score,
+    f1_score,
     classification_report,
 )
 import joblib
 from sklearn.impute import SimpleImputer
 
-# ─── Paths ──────────────────────────────────────────────────────────────────────
-BASE_DIR           = Path(__file__).parents[2]
+# ─── Paths ────────────────────────────────────────────────────────────────────
+BASE_DIR            = Path(__file__).parents[2]
 PROCESSED_DATA_PATH = BASE_DIR / "data" / "processed" / "students_processed.csv"
-MODEL_DIR          = BASE_DIR / "models"
+MODEL_DIR           = BASE_DIR / "models"
 MODEL_DIR.mkdir(exist_ok=True)
 
-# ─── Load Data ─────────────────────────────────────────────────────────────────
+# ─── Load Data ────────────────────────────────────────────────────────────────
 df = pd.read_csv(PROCESSED_DATA_PATH)
-df.columns = df.columns.str.strip()  # <-- Add this line to strip whitespace
+df.columns = df.columns.str.strip()  # strip whitespace
 
 # Debug: print column names to verify
 print(df.columns.tolist())
 
 # Drop identifier and keep raw final_grade
-# ids = df.pop("student_code")
 drop_cols = ["student_code", "first_name", "last_name", "email", "enrollment_date"]
 df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
@@ -37,12 +37,10 @@ else:
     print("Column 'final_grade' not found.")
     exit(1)  # Stop execution if target column is missing
 
-# ─── Binary Target ──────────────────────────────────────────────────────────────
+# ─── Binary Target ────────────────────────────────────────────────────────────
 # Students scoring >= median are labeled 1, others 0
 threshold = y_raw.median()
 y = (y_raw >= threshold).astype(int)
-
-
 
 # One-hot encode gender
 if "gender" in df.columns:
@@ -52,11 +50,11 @@ if "gender" in df.columns:
 # One-hot encode parent_education
 if "parent_education" in df.columns:
     df = pd.get_dummies(df, columns=["parent_education"], prefix="edu")
-    
-    # Features
+
+# Features
 X = df  # all remaining columns
 
-# ─── Train/Test Split ──────────────────────────────────────────────────────────
+# ─── Train/Test Split ─────────────────────────────────────────────────────────
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=42
 )
@@ -70,7 +68,7 @@ imputer = SimpleImputer(strategy="most_frequent")
 X_train = pd.DataFrame(imputer.fit_transform(X_train), columns=X_train.columns)
 X_test  = pd.DataFrame(imputer.transform(X_test), columns=X_train.columns)
 
-# ─── Model Definitions ──────────────────────────────────────────────────────────
+# ─── Model Definitions ────────────────────────────────────────────────────────
 models = {
     "logistic_regression": LogisticRegression(solver="liblinear", random_state=42),
     "random_forest": RandomForestClassifier(
@@ -78,7 +76,7 @@ models = {
     ),
 }
 
-# ─── Training & Evaluation ──────────────────────────────────────────────────────
+# ─── Training & Evaluation ────────────────────────────────────────────────────
 results = {}
 for name, model in models.items():
     model.fit(X_train, y_train)
@@ -89,26 +87,42 @@ for name, model in models.items():
     prec = precision_score(y_test, preds)
     rec  = recall_score(y_test, preds)
     auc  = roc_auc_score(y_test, probs)
+    f1   = f1_score(y_test, preds)
 
-    results[name] = {"accuracy": acc, "precision": prec, "recall": rec, "roc_auc": auc}
+    results[name] = {
+        "accuracy": acc,
+        "precision": prec,
+        "recall": rec,
+        "f1": f1,
+        "roc_auc": auc
+    }
 
     print(f"\nModel: {name}")
     print(f"  Accuracy : {acc:.3f}")
     print(f"  Precision: {prec:.3f}")
     print(f"  Recall   : {rec:.3f}")
     print(f"  ROC-AUC  : {auc:.3f}")
+    print(f"  F1       : {f1:.3f}")
     print("\n" + classification_report(y_test, preds))
 
-# ─── Select Best Model ──────────────────────────────────────────────────────────
-best_model_name = max(results, key=lambda n: results[n]["roc_auc"])
+# ─── Select Best Model ────────────────────────────────────────────────────────
+best_model_name = max(
+    results,
+    key=lambda n: (
+        results[n]["roc_auc"],
+        results[n]["f1"],
+        results[n]["accuracy"]
+    )
+)
 best_model      = models[best_model_name]
 
-# ─── Save Artifacts ─────────────────────────────────────────────────────────────
+# ─── Save Artifacts ───────────────────────────────────────────────────────────
 model_path = MODEL_DIR / f"{best_model_name}.joblib"
 joblib.dump({
     "model": best_model,
     "threshold": threshold,
-    "feature_columns": X.columns.to_list()
+    "feature_columns": X.columns.to_list(),
+    "metrics": results[best_model_name]
 }, model_path)
 
 print(f"\n✔ Saved best model ({best_model_name}) to {model_path}")

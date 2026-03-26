@@ -44,7 +44,7 @@ CREATE TABLE academic_records (
     student_id UUID NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
     academic_year VARCHAR(20) NOT NULL,
     semester VARCHAR(20) NOT NULL,
-    gpa DECIMAL(3, 2) CHECK (gpa >= 0 AND gpa <= 4.0),
+    gpa DECIMAL(4, 2) CHECK (gpa >= 0 AND gpa <= 10.0),
     total_credits INTEGER DEFAULT 0,
     attendance_rate DECIMAL(5, 2) CHECK (attendance_rate >= 0 AND attendance_rate <= 100),
     study_hours_per_week DECIMAL(5, 2),
@@ -128,7 +128,7 @@ CREATE TABLE predictions (
     model_id UUID NOT NULL REFERENCES ml_models(model_id),
     academic_year VARCHAR(20) NOT NULL,
     semester VARCHAR(20) NOT NULL,
-    predicted_gpa DECIMAL(3, 2),
+    predicted_gpa DECIMAL(4, 2) CHECK (predicted_gpa >= 0 AND predicted_gpa <= 10.0),
     predicted_performance_category VARCHAR(50) CHECK (predicted_performance_category IN 
         ('Excellent', 'Good', 'Average', 'Below Average', 'At Risk')),
     confidence_score DECIMAL(5, 4),
@@ -136,7 +136,7 @@ CREATE TABLE predictions (
     input_features JSONB NOT NULL,
     recommendation TEXT,
     prediction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actual_gpa DECIMAL(3, 2),
+    actual_gpa DECIMAL(4, 2) CHECK (actual_gpa >= 0 AND actual_gpa <= 10.0),
     is_accurate BOOLEAN,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

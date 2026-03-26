@@ -61,7 +61,13 @@ export default function InputForm({ onSubmit }: Props) {
 
       <input className={inputClass} type="number" step="0.1" {...register("study_hours", { required: true, min: 0, valueAsNumber: true })} placeholder="Study Hours/Week" />
 
-      <input className={inputClass} type="number" step="0.01" {...register("previous_gpa", { required: true, min: 0, max: 4, valueAsNumber: true })} placeholder="Previous GPA (0-4)" />
+      <input
+        className={inputClass}
+        type="number"
+        step="0.01"
+        {...register("previous_gpa", { required: true, min: 0, max: 10, valueAsNumber: true })}
+        placeholder="Previous GPA (0-10)"
+      />
 
       <input className={inputClass} type="number" step="1" {...register("final_grade", { required: true, min: 0, max: 100, valueAsNumber: true })} placeholder="Final Grade" />
 
@@ -85,9 +91,21 @@ export default function InputForm({ onSubmit }: Props) {
 
       <input className={inputClass} type="number" {...register("late_submissions", { required: true, min: 0, valueAsNumber: true })} placeholder="Late Submissions" />
 
-      <input className={inputClass} type="number" step="0.01" {...register("previous_gpa_sem1", { required: true, min: 0, max: 4, valueAsNumber: true })} placeholder="GPA Sem 1 (0-4)" />
+      <input
+        className={inputClass}
+        type="number"
+        step="0.01"
+        {...register("previous_gpa_sem1", { required: true, min: 0, max: 10, valueAsNumber: true })}
+        placeholder="GPA Sem 1 (0-10)"
+      />
 
-      <input className={inputClass} type="number" step="0.01" {...register("previous_gpa_sem2", { required: true, min: 0, max: 4, valueAsNumber: true })} placeholder="GPA Sem 2 (0-4)" />
+      <input
+        className={inputClass}
+        type="number"
+        step="0.01"
+        {...register("previous_gpa_sem2", { required: true, min: 0, max: 10, valueAsNumber: true })}
+        placeholder="GPA Sem 2 (0-10)"
+      />
 
       <div className="md:col-span-2">
         <Button type="submit">Generate Prediction</Button>
