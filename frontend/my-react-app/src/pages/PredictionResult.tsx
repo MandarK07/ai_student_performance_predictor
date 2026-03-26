@@ -99,7 +99,7 @@ export default function PredictionResult() {
     if (!prediction?.predictedGpa && prediction?.predictedGpa !== 0) {
       return 0;
     }
-    return Math.max(0, Math.min(100, prediction.predictedGpa * 25));
+    return Math.max(0, Math.min(100, prediction.predictedGpa * 10));
   }, [prediction]);
 
   return (

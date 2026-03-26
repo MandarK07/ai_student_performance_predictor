@@ -161,6 +161,11 @@ async def upload_csv(
                     "previous_gpa_sem2": float(row['previous_gpa_sem2'])
                 }
 
+                for key in ("previous_gpa", "previous_gpa_sem1", "previous_gpa_sem2"):
+                    value = input_data[key]
+                    if value < 0 or value > 10:
+                        raise ValueError(f"{key} must be between 0 and 10; received {value}")
+
                 # Preprocess and predict
                 input_df = pd.DataFrame([input_data])
                 processed_df = preprocess_data(input_df)
@@ -173,21 +178,23 @@ async def upload_csv(
                 prediction = model.predict(processed_df)[0]
                 probabilities = model.predict_proba(processed_df)[0]
                 confidence = float(max(probabilities))
+                prob_high = float(probabilities[1]) if len(probabilities) > 1 else float(probabilities[0])
                 
-                # Calculate predicted GPA
-                predicted_gpa = round(prediction if isinstance(prediction, float) else input_data['previous_gpa'] * 0.9, 2)
+                # Calculate predicted GPA scaled to 0–10 and clamp
+                predicted_gpa = round(prob_high * 10, 2)
+                predicted_gpa = max(0.0, min(10.0, predicted_gpa))
                 
-                # Determine category and risk
-                if predicted_gpa >= 3.5:
+                # Determine category and risk (thresholds scaled from 4-pt to 10-pt)
+                if predicted_gpa >= 8.75:
                     category = "Excellent"
                     risk_level = "Low"
-                elif predicted_gpa >= 3.0:
+                elif predicted_gpa >= 7.5:
                     category = "Good"
                     risk_level = "Low"
-                elif predicted_gpa >= 2.5:
+                elif predicted_gpa >= 6.25:
                     category = "Average"
                     risk_level = "Medium"
-                elif predicted_gpa >= 2.0:
+                elif predicted_gpa >= 5.0:
                     category = "Below Average"
                     risk_level = "High"
                 else:

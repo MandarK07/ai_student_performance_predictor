@@ -71,10 +71,10 @@ export default function Dashboard() {
         const scoreValues = performanceByStudent
           .map((item) => {
             if (item?.latest_prediction?.predicted_gpa !== null && item?.latest_prediction?.predicted_gpa !== undefined) {
-              return item.latest_prediction.predicted_gpa * 25;
+              return item.latest_prediction.predicted_gpa * 10;
             }
             const latestGpa = item?.academic_history?.[0]?.gpa;
-            return latestGpa !== null && latestGpa !== undefined ? latestGpa * 25 : null;
+            return latestGpa !== null && latestGpa !== undefined ? latestGpa * 10 : null;
           })
           .filter((value): value is number => value !== null);
 

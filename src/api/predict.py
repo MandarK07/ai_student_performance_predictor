@@ -38,14 +38,14 @@ class StudentFeatures(BaseModel):
     parent_education: str = Field(..., description="Parent education level")
     attendance_rate: float = Field(..., ge=0, le=100, description="Attendance percentage")
     study_hours: float = Field(..., ge=0, description="Weekly study hours")
-    previous_gpa: float = Field(..., ge=0, le=4.0, description="Previous semester GPA")
+    previous_gpa: float = Field(..., ge=0, le=10.0, description="Previous semester GPA")
     final_grade: float = Field(..., ge=0, le=100, description="Final grade score")
     assignment_score_avg: float = Field(..., ge=0, le=100, description="Average assignment score")
     exam_score_avg: float = Field(..., ge=0, le=100, description="Average exam score")
     class_participation: float = Field(..., ge=0, le=10, description="Class participation score")
     late_submissions: int = Field(..., ge=0, description="Number of late submissions")
-    previous_gpa_sem1: float = Field(..., ge=0, le=4.0, description="Semester 1 GPA")
-    previous_gpa_sem2: float = Field(..., ge=0, le=4.0, description="Semester 2 GPA")
+    previous_gpa_sem1: float = Field(..., ge=0, le=10.0, description="Semester 1 GPA")
+    previous_gpa_sem2: float = Field(..., ge=0, le=10.0, description="Semester 2 GPA")
     academic_year: Optional[str] = Field("2023-2024", description="Academic year")
     semester: Optional[str] = Field("Fall", description="Current semester")
 
@@ -119,19 +119,21 @@ async def predict(
         confidence = float(max(probabilities))
         
         # Calculate predicted GPA (convert from classification to GPA scale)
-        predicted_gpa = round(prediction if isinstance(prediction, float) else features.previous_gpa * 0.9, 2)
+        prob_high = float(probabilities[1]) if len(probabilities) > 1 else float(probabilities[0])
+        predicted_gpa = round(prob_high * 10, 2)
+        predicted_gpa = max(0.0, min(10.0, predicted_gpa))
         
         # Determine performance category and risk level
-        if predicted_gpa >= 3.5:
+        if predicted_gpa >= 8.75:
             category = "Excellent"
             risk_level = "Low"
-        elif predicted_gpa >= 3.0:
+        elif predicted_gpa >= 7.5:
             category = "Good"
             risk_level = "Low"
-        elif predicted_gpa >= 2.5:
+        elif predicted_gpa >= 6.25:
             category = "Average"
             risk_level = "Medium"
-        elif predicted_gpa >= 2.0:
+        elif predicted_gpa >= 5.0:
             category = "Below Average"
             risk_level = "High"
         else:

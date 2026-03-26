@@ -1,6 +1,10 @@
 import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from pathlib import Path
+
+# Ensure project root is on sys.path so `src` package is importable when running directly
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.load_data import load_raw_data, save_processed_data
 from src.features.preprocess import preprocess_data
