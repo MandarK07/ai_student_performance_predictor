@@ -7,13 +7,14 @@ import joblib
 import pandas as pd
 from typing import Optional
 
-from src.auth.dependencies import require_roles
+from src.auth.dependencies import require_roles, require_self_or_roles, _resolve_student_for_user
 from src.database.connection import get_db
 from src.database import crud
 from src.features.preprocess import preprocess_data
 
 router = APIRouter()
-PREDICTION_ROLES = ("admin", "teacher", "counselor")
+PREDICT_ROLES = ("admin", "teacher", "student")
+AT_RISK_ROLES = ("admin", "teacher")
 
 INTERVENTION_TYPE_MAP = {
     "Academic Support": "Tutoring",
@@ -63,7 +64,7 @@ class PredictionResponse(BaseModel):
 async def predict(
     features: StudentFeatures,
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles(*PREDICTION_ROLES))
+    _current_user=Depends(require_roles(*PREDICT_ROLES))
 ):
     """
     Generate performance prediction for a student and save to database
@@ -74,6 +75,13 @@ async def predict(
     try:
         # Check if student exists, create if not
         student = crud.get_student_by_code(db, features.student_code)
+
+        # Students may only predict for themselves (email-linked)
+        if _current_user.role == "student":
+            self_student = _resolve_student_for_user(db, _current_user)
+            if features.student_code != self_student.student_code:
+                raise HTTPException(status_code=403, detail="Students can only run predictions for their own code")
+            student = self_student
         if not student:
             # Create new student record
             student_data = {
@@ -221,7 +229,7 @@ async def predict(
 async def get_student_predictions(
     student_code: str,
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles(*PREDICTION_ROLES))
+    _current_user=Depends(require_self_or_roles("admin", "teacher"))
 ):
     """
     Get all predictions for a specific student
@@ -250,7 +258,7 @@ async def get_student_predictions(
 @router.get("/at-risk-students")
 async def get_at_risk_students(
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles(*PREDICTION_ROLES))
+    _current_user=Depends(require_roles(*AT_RISK_ROLES))
 ):
     """
     Get list of students at high or critical risk

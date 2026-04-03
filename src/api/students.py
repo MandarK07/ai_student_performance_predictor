@@ -5,14 +5,14 @@ from pydantic import BaseModel, Field, EmailStr
 from datetime import date, datetime
 from typing import List, Optional
 
-from src.auth.dependencies import require_roles
+from src.auth.dependencies import require_roles, require_self_or_roles
 from src.database.connection import get_db
 from src.database import crud
 from src.database.models import Student
 
 router = APIRouter()
 
-READ_ROLES = ("admin", "teacher", "counselor")
+READ_ROLES = ("admin", "teacher")
 WRITE_ROLES = ("admin", "teacher")
 
 
@@ -294,7 +294,7 @@ async def search_students(
 async def get_student(
     student_code: str,
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles(*READ_ROLES))
+    _current_user=Depends(require_self_or_roles(*READ_ROLES))
 ):
     """
     Get student details by student code
@@ -321,7 +321,7 @@ async def get_student(
 async def get_student_performance(
     student_code: str,
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles(*READ_ROLES))
+    _current_user=Depends(require_self_or_roles(*READ_ROLES))
 ):
     """
     Get comprehensive performance data for a student
@@ -365,7 +365,7 @@ async def get_student_performance(
 async def get_student_profile(
     student_code: str,
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles(*READ_ROLES))
+    _current_user=Depends(require_self_or_roles(*READ_ROLES))
 ):
     """
     Get detailed student profile from the database:
@@ -412,7 +412,7 @@ async def update_student(
 async def delete_student(
     student_code: str,
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles(*WRITE_ROLES))
+    _current_user=Depends(require_roles("admin"))
 ):
     """
     Deactivate a student (soft delete)

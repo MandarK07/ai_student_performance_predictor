@@ -31,7 +31,7 @@ def clean_for_json(obj):
 
 
 router = APIRouter()
-UPLOAD_ROLES = ("admin", "teacher", "counselor")
+UPLOAD_ROLES = ("admin", "teacher")
 
 REQUIRED_COLUMNS = {
     "student_code", "gender", "age", "parent_education", "attendance_rate",

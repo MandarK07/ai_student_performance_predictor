@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from src.auth.security import decode_token
 from src.database.connection import get_db
 from src.database import crud
+from src.database.models import Student
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -108,3 +109,44 @@ def require_roles(*allowed_roles: str) -> Callable:
         return current_user
 
     return role_dependency
+
+
+def _resolve_student_for_user(db: Session, current_user) -> Student:
+    """
+    Map an authenticated user to their student record using email.
+    Raises HTTP 403 if no matching student is found.
+    """
+    if not current_user.email:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Student mapping not found")
+    student = crud.get_student_by_email(db, current_user.email)
+    if not student:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Student record not found for user")
+    return student
+
+
+def require_self_or_roles(*allowed_roles: str) -> Callable:
+    """
+    Allow listed roles; if current_user is a student, allow only when path param
+    student_code or student_id matches their own record.
+    """
+    def dependency(
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)
+    ):
+        if current_user.role in allowed_roles:
+            return current_user
+
+        if current_user.role == "student":
+            student = _resolve_student_for_user(db, current_user)
+            target_code = request.path_params.get("student_code")
+            target_id = request.path_params.get("student_id")
+
+            if target_code and target_code == student.student_code:
+                return current_user
+            if target_id and str(target_id) == str(student.student_id):
+                return current_user
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+    return dependency

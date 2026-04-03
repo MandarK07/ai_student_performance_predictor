@@ -19,8 +19,14 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      await login(usernameOrEmail, password);
-      navigate(from, { replace: true });
+      const me = await login(usernameOrEmail, password);
+      const roleTarget =
+        me.role === "admin"
+          ? "/dashboard"
+          : me.role === "teacher"
+          ? "/dashboard"
+          : "/dashboard";
+      navigate(from !== "/" ? from : roleTarget, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
