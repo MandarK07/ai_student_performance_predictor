@@ -52,7 +52,14 @@ export default function Navbar({ isSidebarOpen, onToggleSidebar }: NavbarProps) 
               </span>
               <span>
                 <span className="block text-sm font-medium text-slate-900">{user?.full_name || user?.username || "User"}</span>
-                <span className="block text-xs text-slate-500">{user?.role || "guest"}</span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="text-xs text-slate-500">{user?.role || "guest"}</span>
+                  {user?.role && (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-600">
+                      {user.role}
+                    </span>
+                  )}
+                </span>
               </span>
               <ChevronDown className="h-4 w-4 text-slate-500" />
             </button>

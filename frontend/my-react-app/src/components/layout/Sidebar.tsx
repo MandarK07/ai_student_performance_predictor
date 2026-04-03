@@ -1,7 +1,8 @@
 import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, BarChart3, Gauge, GraduationCap, Info, Upload, UserCircle2, WandSparkles } from "lucide-react";
+import { AlertTriangle, BarChart3, Gauge, GraduationCap, Info, Upload, UserCircle2, WandSparkles, Users, FileText, SettingsIcon } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { useAuth } from "../../context/AuthContext";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -11,20 +12,34 @@ type MenuItem = {
   to: string;
   label: string;
   icon: LucideIcon;
+  roles?: string[];
 };
 
 const items: MenuItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: Gauge },
-  { to: "/students", label: "Students", icon: GraduationCap },
-  { to: "/predict", label: "Predictor", icon: WandSparkles },
-  { to: "/prediction-result", label: "Results", icon: BarChart3 },
-  { to: "/upload-csv", label: "CSV Upload", icon: Upload },
+  { to: "/dashboard", label: "Dashboard", icon: Gauge }, /* default open to all authenticated */
+  { to: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin"] },
+  { to: "/users", label: "Users Management", icon: Users, roles: ["admin"] },
+  { to: "/audit-logs", label: "Audit Logs", icon: FileText, roles: ["admin"] },
+  { to: "/settings", label: "Settings", icon: SettingsIcon, roles: ["admin"] },
+  { to: "/students", label: "Students", icon: GraduationCap, roles: ["admin", "teacher"] },
+  { to: "/predict", label: "Predictor", icon: WandSparkles, roles: ["admin", "teacher","student"] },
+  { to: "/prediction-result", label: "Results", icon: BarChart3, roles: ["admin", "teacher", "student"] },
+  { to: "/upload-csv", label: "CSV Upload", icon: Upload, roles: ["admin", "teacher"] },
   { to: "/profile", label: "Profile", icon: UserCircle2 },
-  { to: "/at-risk", label: "At-Risk", icon: AlertTriangle },
+  { to: "/at-risk", label: "At-Risk", icon: AlertTriangle, roles: ["admin", "teacher"] },
   { to: "/about", label: "About", icon: Info },
 ];
 
 export default function Sidebar({ isOpen }: SidebarProps) {
+  const { user } = useAuth();
+  
+  // Filter sidebar items by role
+  const visibleItems = items.filter(item => {
+    if (!item.roles) return true; // Open to all
+    if (!user) return false;
+    return item.roles.includes(user.role);
+  });
+
   return (
     <aside className={cn("flex flex-col border-r border-slate-200 bg-white transition-all duration-300", isOpen ? "w-72" : "w-20")}>
       <div className="p-3">
@@ -37,8 +52,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             AI
           </NavLink>
         </div>
-        <nav className="space-y-1">
-          {items.map((item) => {
+        <nav className="space-y-1 overflow-y-auto">
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink

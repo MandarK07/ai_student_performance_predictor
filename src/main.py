@@ -10,6 +10,8 @@ from src.api.predict import router as predict_router
 from src.api.upload import router as upload_router
 from src.api.students import router as students_router
 from src.api.auth import router as auth_router
+from src.api.admin import router as admin_router
+from src.api.dashboard import router as dashboard_router
 from src.auth.bootstrap import ensure_admin_user
 from src.database.connection import test_connection
 
@@ -57,6 +59,8 @@ app.include_router(predict_router, prefix="/api", tags=["Predictions"])
 app.include_router(upload_router, prefix="/api", tags=["Data Upload"])
 app.include_router(students_router, prefix="/api", tags=["Students"])
 app.include_router(auth_router, prefix="/api", tags=["Authentication"])
+app.include_router(admin_router, prefix="/api", tags=["Admin"])
+app.include_router(dashboard_router, prefix="/api", tags=["Dashboard"])
 
 
 @app.get("/", response_class=HTMLResponse)

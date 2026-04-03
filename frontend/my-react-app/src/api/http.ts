@@ -88,6 +88,11 @@ export async function apiFetch(path: string, init: RequestInit = {}, retry = tru
     headers,
   });
 
+  if (response.status === 403) {
+    window.location.href = "/access-denied";
+    return response;
+  }
+
   if (response.status !== 401 || !retry || path.startsWith("/auth/")) {
     return response;
   }

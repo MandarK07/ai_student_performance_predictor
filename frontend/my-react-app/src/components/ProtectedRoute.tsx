@@ -24,14 +24,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 shadow-soft">
-          <h3 className="text-lg font-semibold text-slate-900">Access Denied</h3>
-          <p className="mt-2 text-sm text-slate-600">You do not have permission to view this page.</p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/access-denied" replace />;
   }
 
   return children;
