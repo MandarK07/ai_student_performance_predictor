@@ -170,6 +170,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) CHECK (role IN ('admin', 'teacher', 'counselor', 'student', 'parent')),
     full_name VARCHAR(200) NOT NULL,
+    student_id UUID REFERENCES students(student_id),
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP,
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
@@ -177,6 +178,23 @@ CREATE TABLE users (
     password_changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Enrollment invites for students
+CREATE TABLE enrollment_invites (
+    invite_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    token_hash VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    student_code VARCHAR(50),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    role VARCHAR(50) DEFAULT 'student' CHECK (role = 'student'),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'cancelled', 'expired')),
+    expires_at TIMESTAMP NOT NULL,
+    created_by UUID REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    accepted_at TIMESTAMP,
+    cancelled_at TIMESTAMP
 );
 
 -- Authentication sessions (refresh token persistence and rotation)

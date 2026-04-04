@@ -250,6 +250,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50))
     full_name = Column(String(200), nullable=False)
+    student_id = Column(UUID(as_uuid=True), ForeignKey('students.student_id'))
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime)
     failed_login_attempts = Column(Integer, default=0, nullable=False)
@@ -262,6 +263,7 @@ class User(Base):
     auth_sessions = relationship("AuthSession", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user")
     uploads = relationship("UploadHistory", back_populates="user")
+    student = relationship("Student")
 
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"
@@ -332,3 +334,24 @@ class UploadHistory(Base):
 
     def __repr__(self):
         return f"<UploadHistory {self.file_name} - {self.status}>"
+
+
+class EnrollmentInvite(Base):
+    __tablename__ = "enrollment_invites"
+
+    invite_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    token_hash = Column(String(255), unique=True, nullable=False)
+    email = Column(String(255), nullable=False)
+    student_code = Column(String(50))
+    first_name = Column(String(100))
+    last_name = Column(String(100))
+    role = Column(String(50), default="student")
+    status = Column(String(20), default="pending")
+    expires_at = Column(DateTime, nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.user_id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    accepted_at = Column(DateTime)
+    cancelled_at = Column(DateTime)
+
+    def __repr__(self):
+        return f"<EnrollmentInvite {self.email} status={self.status}>"

@@ -113,9 +113,16 @@ def require_roles(*allowed_roles: str) -> Callable:
 
 def _resolve_student_for_user(db: Session, current_user) -> Student:
     """
-    Map an authenticated user to their student record using email.
+    Map an authenticated user to their student record, preferring explicit link.
     Raises HTTP 403 if no matching student is found.
     """
+    # Prefer explicit linkage
+    if getattr(current_user, "student_id", None):
+        student = crud.get_student_by_id(db, current_user.student_id)
+        if student:
+            return student
+
+    # Fallback to email lookup
     if not current_user.email:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Student mapping not found")
     student = crud.get_student_by_email(db, current_user.email)

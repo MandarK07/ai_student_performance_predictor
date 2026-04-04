@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from src.auth.dependencies import require_roles
+from src.auth.dependencies import require_roles, _resolve_student_for_user
 from src.database.connection import get_db
 from src.database import crud
 from src.api.students import _build_student_profile_payload
@@ -15,8 +15,8 @@ async def get_student_dashboard(
     db: Session = Depends(get_db)
 ):
     """Get the personalized dashboard for the logged-in student."""
-    # Find student by email linkage
-    student = crud.get_student_by_email(db, current_user.email)
+    # Prefer explicit linkage via user.student_id; fall back to email
+    student = _resolve_student_for_user(db, current_user)
     if not student:
          raise HTTPException(
              status_code=status.HTTP_404_NOT_FOUND, 

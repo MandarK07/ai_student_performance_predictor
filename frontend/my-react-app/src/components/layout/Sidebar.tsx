@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, BarChart3, Gauge, GraduationCap, Info, Upload, UserCircle2, WandSparkles, Users, FileText, SettingsIcon } from "lucide-react";
+import { AlertTriangle, BarChart3, Gauge, GraduationCap, Info, Upload, UserCircle2, WandSparkles, Users, FileText, SettingsIcon, Link as LinkIcon } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
 
@@ -27,6 +27,7 @@ const items: MenuItem[] = [
   { to: "/upload-csv", label: "CSV Upload", icon: Upload, roles: ["admin", "teacher"] },
   { to: "/profile", label: "Profile", icon: UserCircle2 },
   { to: "/at-risk", label: "At-Risk", icon: AlertTriangle, roles: ["admin", "teacher"] },
+  { to: "/invites", label: "Invites", icon: LinkIcon, roles: ["admin", "teacher"] },
   { to: "/about", label: "About", icon: Info },
 ];
 
