@@ -17,6 +17,8 @@ import UsersManagement from "./pages/UsersManagement";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import AccessDenied from "./pages/AccessDenied";
+import AcceptInvite from "./pages/AcceptInvite";
+import Invites from "./pages/Invites";
 
 
 function App() {
@@ -27,6 +29,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register-user" element={<RegisterUser />} />
         <Route path="/access-denied" element={<AccessDenied />} />
+        <Route path="/enroll/:token" element={<AcceptInvite />} />
 
         <Route
           element={
@@ -49,6 +52,7 @@ function App() {
             <Route path="/upload-csv" element={<CsvUploadPage />} />
             <Route path="/upload" element={<Navigate to="/upload-csv" replace />} />
             <Route path="/at-risk" element={<AtRiskStudents />} />
+            <Route path="/invites" element={<Invites />} />
           </Route>
 
           {/* Open to all authenticated users */}

@@ -8,8 +8,9 @@ from datetime import datetime
 import uuid
 
 from src.database.models import (
-    Student, Parent, AcademicRecord, Course, 
-    Enrollment, Grade, Prediction, MLModel, Intervention, User, AuthSession, AuditLog
+    Student, Parent, AcademicRecord, Course,
+    Enrollment, Grade, Prediction, MLModel, Intervention, User, AuthSession, AuditLog,
+    EnrollmentInvite
 )
 
 
@@ -514,6 +515,21 @@ def create_enrollment(db: Session, enrollment_data: dict) -> Enrollment:
     db.commit()
     db.refresh(enrollment)
     return enrollment
+
+
+# =============================================================================
+# ENROLLMENT INVITES
+# =============================================================================
+def create_enrollment_invite(db: Session, invite_data: dict) -> EnrollmentInvite:
+    invite = EnrollmentInvite(**invite_data)
+    db.add(invite)
+    db.commit()
+    db.refresh(invite)
+    return invite
+
+
+def get_enrollment_invite_by_hash(db: Session, token_hash: str) -> Optional[EnrollmentInvite]:
+    return db.query(EnrollmentInvite).filter(EnrollmentInvite.token_hash == token_hash).first()
 
 
 def get_student_enrollments(

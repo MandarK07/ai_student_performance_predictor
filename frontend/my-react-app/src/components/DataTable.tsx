@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 type Column = {
   key: string;
   label: string;

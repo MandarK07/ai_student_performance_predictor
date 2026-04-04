@@ -12,6 +12,7 @@ from src.api.students import router as students_router
 from src.api.auth import router as auth_router
 from src.api.admin import router as admin_router
 from src.api.dashboard import router as dashboard_router
+from src.api.enrollments import router as enrollments_router
 from src.auth.bootstrap import ensure_admin_user
 from src.database.connection import test_connection
 
@@ -61,6 +62,7 @@ app.include_router(students_router, prefix="/api", tags=["Students"])
 app.include_router(auth_router, prefix="/api", tags=["Authentication"])
 app.include_router(admin_router, prefix="/api", tags=["Admin"])
 app.include_router(dashboard_router, prefix="/api", tags=["Dashboard"])
+app.include_router(enrollments_router, prefix="/api", tags=["Enrollments"])
 
 
 @app.get("/", response_class=HTMLResponse)
