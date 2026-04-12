@@ -1,6 +1,16 @@
-const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+function normalizeApiBaseUrl(value?: string): string | null {
+  const trimmedValue = value?.trim();
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const normalizedValue = trimmedValue.replace(/\/+$/, "");
+  return normalizedValue.endsWith("/api") ? normalizedValue : `${normalizedValue}/api`;
+}
+
+const configuredApiBaseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const fallbackApiBaseUrl = import.meta.env.DEV ? "/api" : `${window.location.origin}/api`;
-const API_BASE_URL = (configuredApiBaseUrl || fallbackApiBaseUrl).replace(/\/$/, "");
+const API_BASE_URL = configuredApiBaseUrl || fallbackApiBaseUrl;
 
 const ACCESS_TOKEN_KEY = "auth_access_token";
 const REFRESH_TOKEN_KEY = "auth_refresh_token";
