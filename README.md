@@ -443,6 +443,63 @@ VITE_API_BASE_URL=https://<your-render-service>.onrender.com/api
 - Run a single prediction
 - Upload a sample CSV and confirm batch predictions complete
 
+## Private repo deployment path
+
+If you do not want to connect the private repository directly to Render, use the existing backend `Dockerfile` with GitHub Container Registry and deploy the backend as an image-backed Render service.
+
+### 1. Publish the backend image to GHCR
+
+- Push this repository to GitHub
+- Run the included GitHub Actions workflow:
+  - `.github/workflows/publish-backend-image.yml`
+- The workflow publishes:
+
+```text
+ghcr.io/<github-owner>/ai-student-performance-api:latest
+```
+
+Notes:
+
+- The workflow uses the built-in `GITHUB_TOKEN`
+- The image is built for `linux/amd64`, which Render requires
+- Re-run the workflow after backend changes, or push to `main`
+
+### 2. Create a Render service from the private image
+
+- In Render, create a new Web Service
+- Under Source Code, choose `Existing Image`
+- Use the image URL:
+
+```text
+ghcr.io/<github-owner>/ai-student-performance-api:latest
+```
+
+- Add a private registry credential for GitHub Container Registry:
+  - Registry: `GitHub Container Registry`
+  - Username: your GitHub username
+  - Personal Access Token: a GitHub classic PAT with `read:packages`
+
+- Configure environment variables:
+
+```env
+DATABASE_URL=<your-neon-connection-string>
+FRONTEND_URL=http://localhost:5173
+MODEL_PATH=models/random_forest.joblib
+JWT_SECRET=<strong-random-secret>
+JWT_ALGORITHM=HS256
+JWT_ISSUER=ai-student-performance-predictor
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@studentai.com
+ADMIN_PASSWORD=<strong-admin-password>
+ADMIN_FULL_NAME=System Administrator
+```
+
+### 3. Update and redeploy the image-backed service
+
+- Push backend changes to GitHub so the GHCR workflow publishes a fresh image
+- In Render, trigger `Manual Deploy` -> `Deploy latest reference`
+- After the frontend is live, replace `FRONTEND_URL=http://localhost:5173` with your Vercel URL
+
 ## Data and model generation workflow
 
 If you want to regenerate the dataset and retrain the model:
