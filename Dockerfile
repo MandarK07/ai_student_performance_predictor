@@ -20,7 +20,7 @@ RUN pip install --upgrade pip \
 
 COPY src ./src
 COPY database ./database
-COPY models ./models
+COPY models/random_forest.joblib ./models/random_forest.joblib
 COPY .env.example ./
 
 EXPOSE 10000

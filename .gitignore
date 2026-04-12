@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 *.pkl
 *.joblib
+!models/
+!models/random_forest.joblib
 .env
 frontend/my-react-app/.env
 frontend/my-react-app/.env.local
