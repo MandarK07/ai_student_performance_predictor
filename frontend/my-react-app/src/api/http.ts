@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://localhost:8000/api";
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const fallbackApiBaseUrl = import.meta.env.DEV ? "/api" : `${window.location.origin}/api`;
+const API_BASE_URL = (configuredApiBaseUrl || fallbackApiBaseUrl).replace(/\/$/, "");
 
 const ACCESS_TOKEN_KEY = "auth_access_token";
 const REFRESH_TOKEN_KEY = "auth_refresh_token";

@@ -4,6 +4,10 @@ __pycache__/
 *.pkl
 *.joblib
 .env
+frontend/my-react-app/.env
+frontend/my-react-app/.env.local
+frontend/my-react-app/.env.development.local
+frontend/my-react-app/.env.production.local
 node_modules/
 frontend/build/
 .idea/

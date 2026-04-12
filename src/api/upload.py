@@ -4,12 +4,12 @@ from sqlalchemy.orm import Session
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
-import joblib
 
 from src.auth.dependencies import require_roles
 from src.database.connection import get_db
 from src.database import crud
 from src.features.preprocess import preprocess_data
+from src.model_loader import get_model_path, load_prediction_artifacts
 
 from sqlalchemy.exc import IntegrityError
 
@@ -41,13 +41,8 @@ REQUIRED_COLUMNS = {
 }
 
 # Load ML model
-try:
-    model_bundle = joblib.load("models/random_forest.joblib")
-    model = model_bundle["model"]
-    feature_columns = model_bundle["feature_columns"]
-except:
-    model = None
-    feature_columns = []
+model, feature_columns = load_prediction_artifacts()
+MODEL_PATH = get_model_path()
 
 
 @router.post("/upload-csv")
@@ -98,7 +93,7 @@ async def upload_csv(
                 "model_name": "Random Forest Classifier",
                 "model_version": "v1.0",
                 "algorithm": "Random Forest",
-                "file_path": "models/random_forest.joblib",
+                "file_path": MODEL_PATH,
                 "accuracy": 0.875,
                 "training_date": datetime.now(),
                 "is_active": True

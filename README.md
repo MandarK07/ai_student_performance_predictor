@@ -322,6 +322,8 @@ ADMIN_EMAIL=admin@studentai.com
 ADMIN_PASSWORD=admin123
 ```
 
+`FRONTEND_URL` may be a comma-separated list when you need both local and deployed frontend origins.
+
 Useful auth-related environment variables supported by the code:
 
 ```env
@@ -364,6 +366,82 @@ npm run dev
 Frontend URL:
 
 - `http://localhost:5173`
+
+Local development uses the Vite `/api` proxy automatically. For deployed frontend builds, set `VITE_API_BASE_URL` in `frontend/my-react-app/.env.example` or in your hosting provider dashboard.
+
+## Free deployment setup
+
+This repository is prepared for a free-tier deployment split:
+
+- PostgreSQL on Neon
+- FastAPI backend on Render using `render.yaml`
+- React frontend on Vercel using `frontend/my-react-app/vercel.json`
+
+### 1. Create the database on Neon
+
+- Create a free PostgreSQL project in Neon
+- Copy the connection string into `DATABASE_URL`
+- Apply the schema:
+
+```powershell
+psql "<your-neon-database-url>" -f database/schema.sql
+```
+
+### 2. Deploy the backend on Render
+
+- Create a new Web Service from this repository, or use `render.yaml`
+- Build command:
+
+```bash
+pip install -r requirements.txt
+```
+
+- Start command:
+
+```bash
+uvicorn src.main:app --host 0.0.0.0 --port $PORT
+```
+
+- Required environment variables:
+
+```env
+DATABASE_URL=<your-neon-connection-string>
+FRONTEND_URL=https://<your-vercel-site>.vercel.app
+MODEL_PATH=models/random_forest.joblib
+JWT_SECRET=<strong-random-secret>
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@studentai.com
+ADMIN_PASSWORD=<strong-admin-password>
+```
+
+### 3. Deploy the frontend on Vercel
+
+- Import `frontend/my-react-app` as the project root
+- Build command:
+
+```bash
+npm run build
+```
+
+- Output directory:
+
+```text
+dist
+```
+
+- Required environment variable:
+
+```env
+VITE_API_BASE_URL=https://<your-render-service>.onrender.com/api
+```
+
+### 4. Smoke test the deployed app
+
+- Open the Vercel frontend URL
+- Confirm login or signup works
+- Confirm `GET /health` on the Render backend returns healthy status
+- Run a single prediction
+- Upload a sample CSV and confirm batch predictions complete
 
 ## Data and model generation workflow
 
@@ -420,5 +498,5 @@ Default admin creation happens during startup if the configured admin user does 
 - complete upload history persistence and `/api/upload-history`
 - replace the current classification-to-GPA mapping with a cleaner production ML objective
 - add automated tests for backend and frontend
-- add deployment assets such as Docker and CI/CD workflows if needed
+- add Docker and CI/CD workflows if needed
 

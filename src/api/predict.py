@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from datetime import datetime
-import joblib
 import pandas as pd
 from typing import Optional
 
@@ -11,6 +10,7 @@ from src.auth.dependencies import require_roles, require_self_or_roles, _resolve
 from src.database.connection import get_db
 from src.database import crud
 from src.features.preprocess import preprocess_data
+from src.model_loader import get_model_path, load_prediction_artifacts
 
 router = APIRouter()
 PREDICT_ROLES = ("admin", "teacher", "student")
@@ -24,13 +24,8 @@ INTERVENTION_TYPE_MAP = {
 
 
 # Load ML model
-try:
-    model_bundle = joblib.load("models/random_forest.joblib")
-    model = model_bundle["model"]
-    feature_columns = model_bundle["feature_columns"]
-except:
-    model = None
-    feature_columns = []
+model, feature_columns = load_prediction_artifacts()
+MODEL_PATH = get_model_path()
 
 class StudentFeatures(BaseModel):
     student_code: str = Field(..., description="Student identification code")
@@ -169,7 +164,7 @@ async def predict(
                 "model_name": "Random Forest Classifier",
                 "model_version": "v1.0",
                 "algorithm": "Random Forest",
-                "file_path": "models/random_forest.joblib",
+                "file_path": MODEL_PATH,
                 "accuracy": 0.875,
                 "training_date": datetime.now(),
                 "is_active": True
