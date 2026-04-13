@@ -536,6 +536,8 @@ The project includes:
 
 Default admin creation happens during startup if the configured admin user does not already exist.
 
+If you already have an admin row in the deployed database and need to realign it with your current Render environment variables, temporarily set `ADMIN_SYNC_ON_STARTUP=true` and redeploy once. That will sync the configured admin username, email, password, full name, and role onto the existing admin account.
+
 ## Frontend features
 
 - landing page
