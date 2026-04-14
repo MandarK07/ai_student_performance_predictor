@@ -29,6 +29,7 @@ router = APIRouter(prefix="/auth")
 class LoginRequest(BaseModel):
     username_or_email: str = Field(..., min_length=3, max_length=255)
     password: str = Field(..., min_length=1, max_length=255)
+    role: str = Field(..., pattern="^(admin|teacher|counselor|student|parent)$")
 
 
 class RegisterRequest(BaseModel):
@@ -45,6 +46,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=255)
     full_name: str = Field(..., min_length=2, max_length=200)
+    role: str = Field(..., pattern="^(teacher|student)$")
 
 
 class RefreshRequest(BaseModel):
@@ -210,7 +212,7 @@ async def signup_user(payload: SignupRequest, request: Request, db: Session = De
             "username": payload.username.strip(),
             "email": payload.email,
             "password_hash": hash_password(payload.password),
-            "role": "student",
+            "role": payload.role,
             "full_name": payload.full_name.strip(),
             "is_active": True,
             "password_changed_at": datetime.utcnow(),
@@ -250,6 +252,20 @@ async def login(payload: LoginRequest, request: Request, db: Session = Depends(g
     if not user.is_active:
         _log_auth_event(db, "auth.login.failed", request, user_id=user.user_id, details={"reason": "inactive"})
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
+
+    # Strict Role Validation
+    if user.role != payload.role:
+        _log_auth_event(
+            db, 
+            "auth.login.failed", 
+            request, 
+            user_id=user.user_id, 
+            details={"reason": "role_mismatch", "selected": payload.role, "actual": user.role}
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid role selection for this account"
+        )
 
     if user.locked_until and user.locked_until.replace(tzinfo=timezone.utc) > _utcnow():
         _log_auth_event(db, "auth.login.failed", request, user_id=user.user_id, details={"reason": "locked"})

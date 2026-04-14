@@ -9,6 +9,8 @@ import Students from "./pages/Students";
 import Predictor from "./pages/Predictor";
 import PredictionResult from "./pages/PredictionResult";
 import CsvUploadPage from "./pages/CsvUploadPage";
+import StudentDashboard from "./pages/StudentDashboard";
+import MainDashboard from "./pages/MainDashboard";
 import StudentProfile from "./pages/StudentProfile";
 import AtRiskStudents from "./pages/AtRiskStudents";
 import About from "./pages/About";
@@ -40,10 +42,16 @@ function App() {
         >
           {/* Admin Only routes */}
           <Route element={<ProtectedRoute allowedRoles={["admin"]}><Outlet /></ProtectedRoute>}>
+            <Route path="/admin-dashboard" element={<MainDashboard />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/users" element={<UsersManagement />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/settings" element={<Settings />} />
+          </Route>
+
+          {/* Teacher Only routes */}
+          <Route element={<ProtectedRoute allowedRoles={["teacher"]}><Outlet /></ProtectedRoute>}>
+            <Route path="/teacher-dashboard" element={<MainDashboard />} />
           </Route>
 
           {/* Admin & Teacher */}
@@ -53,6 +61,11 @@ function App() {
             <Route path="/upload" element={<Navigate to="/upload-csv" replace />} />
             <Route path="/at-risk" element={<AtRiskStudents />} />
             <Route path="/invites" element={<Invites />} />
+          </Route>
+
+          {/* Student Only routes */}
+          <Route element={<ProtectedRoute allowedRoles={["student"]}><Outlet /></ProtectedRoute>}>
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
           </Route>
 
           {/* Open to all authenticated users */}

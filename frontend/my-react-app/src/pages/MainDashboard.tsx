@@ -34,7 +34,7 @@ function widthClass(ratio: number): string {
   return "w-0";
 }
 
-export default function Dashboard() {
+export default function MainDashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalStudents: 0,
     avgScorePct: 0,

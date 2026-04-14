@@ -34,15 +34,17 @@ export type SignupRequest = {
   email: string;
   password: string;
   full_name: string;
+  role: "teacher" | "student";
 };
 
-export async function login(usernameOrEmail: string, password: string): Promise<void> {
+export async function login(usernameOrEmail: string, password: string, role: string): Promise<void> {
   const response = await apiFetch("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       username_or_email: usernameOrEmail,
       password,
+      role,
     }),
   });
 

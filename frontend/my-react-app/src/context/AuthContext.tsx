@@ -5,7 +5,7 @@ import { fetchCurrentUser, isAuthenticated, login as loginApi, logout as logoutA
 type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
-  login: (usernameOrEmail: string, password: string) => Promise<AuthUser>;
+  login: (usernameOrEmail: string, password: string, role: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser().finally(() => setLoading(false));
   }, []);
 
-  const login = async (usernameOrEmail: string, password: string) => {
-    await loginApi(usernameOrEmail, password);
+  const login = async (usernameOrEmail: string, password: string, role: string) => {
+    await loginApi(usernameOrEmail, password, role);
     const me = await fetchCurrentUser();
     setUser(me);
     return me;
