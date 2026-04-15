@@ -20,18 +20,18 @@ const HeroSection = () => (
     <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-12 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <img
+          {/* <img
             src="/logo.png"
             alt="AI EduPredict logo"
             className="h-12 w-12 rounded-xl shadow-lg ring-2 ring-white/30 bg-white/10 backdrop-blur"
-          />
+          /> */}
           <div className="text-2xl font-bold text-white">AI EduPredict</div>
         </div>
         <div className="flex items-center gap-3">
           <Button
             asChild
             variant="outline"
-            className="border-white/40 text-white hover:-translate-y-0.5 hover:bg-white/15 transition-all duration-200"
+            className="bg-transparent border-white/40 text-white hover:-translate-y-0.5 hover:bg-white/10 transition-all duration-200"
           >
             <Link to="/login">Sign In</Link>
           </Button>
@@ -58,18 +58,27 @@ const HeroSection = () => (
             </p>
           </div>
           <div className="flex flex-col gap-4 sm:flex-row">
-            <Link to="/predict">
-              <Button className="bg-white text-blue-900 hover:bg-blue-50 transition-all duration-300 group">
+            <Button
+              asChild
+              className="bg-white text-blue-900 hover:bg-blue-50 transition-all duration-300 group"
+            >
+              <Link to="/predict">
                 Request Demo
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-            <Button variant="outline" className="border-white text-white hover:bg-white/10">
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-transparent border-white text-white hover:bg-white/10"
+              onClick={() => {
+                document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               See How It Works
             </Button>
           </div>
         </div>
-        
+
         {/* Right Dashboard Preview */}
         <div className="relative z-10 flex justify-center">
           <div className="relative rounded-2xl bg-white/10 backdrop-blur-md p-6 border border-white/20 shadow-2xl w-full max-w-lg">
@@ -82,7 +91,7 @@ const HeroSection = () => (
                   <div className="h-3 w-3 rounded-full bg-red-400"></div>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                   <div className="flex items-center gap-3">
@@ -95,7 +104,7 @@ const HeroSection = () => (
                     Low Risk
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -107,7 +116,7 @@ const HeroSection = () => (
                     Medium Risk
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -120,7 +129,7 @@ const HeroSection = () => (
                   </span>
                 </div>
               </div>
-              
+
               <div className="mt-4 pt-4 border-t border-slate-200">
                 <div className="flex justify-between text-sm text-slate-600 mb-2">
                   <span>Performance Trends</span>
@@ -167,7 +176,7 @@ const ProblemSection = () => {
             Traditional approaches fail to leverage data for proactive student support.
           </SectionSubtitle>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {problems.map((problem, index) => (
             <Card key={index} className="p-6 hover:shadow-lg transition-shadow duration-300 border-slate-200">
@@ -205,7 +214,7 @@ const HowItWorksSection = () => {
   ];
 
   return (
-    <section className="py-20">
+    <section id="how-it-works" className="py-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <SectionTitle>How It Works</SectionTitle>
@@ -213,7 +222,7 @@ const HowItWorksSection = () => {
             Our AI-powered system transforms student data into actionable insights.
           </SectionSubtitle>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((step, index) => (
             <div key={index} className="text-center">
@@ -264,10 +273,10 @@ const FeaturesSection = () => {
             Everything you need to support student success with AI-powered insights.
           </SectionSubtitle>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
-            <Card 
+            <Card
               key={index}
               className="p-6 hover:shadow-lg transition-all duration-300 border-slate-200 hover:-translate-y-1"
             >
@@ -294,7 +303,7 @@ const DashboardPreviewSection = () => (
           Real-time insights at your fingertips to monitor and support student success.
         </SectionSubtitle>
       </div>
-      
+
       <div className="rounded-2xl bg-white border border-slate-200 shadow-xl overflow-hidden max-w-6xl mx-auto">
         <div className="p-6 bg-slate-50 border-b border-slate-200">
           <div className="flex justify-between items-center">
@@ -305,7 +314,7 @@ const DashboardPreviewSection = () => (
             </div>
           </div>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card className="p-6 text-center">
@@ -321,7 +330,7 @@ const DashboardPreviewSection = () => (
               <div className="text-slate-600 mt-2">Intervention Success Rate</div>
             </Card>
           </div>
-          
+
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">Risk Distribution</h3>
             <div className="space-y-4">
@@ -354,7 +363,7 @@ const DashboardPreviewSection = () => (
               </div>
             </div>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead>
@@ -481,7 +490,7 @@ const Footer = () => (
             AI-powered student performance prediction for educational institutions.
           </p>
         </div>
-        
+
         <div>
           <h3 className="text-lg font-semibold mb-4">Product</h3>
           <ul className="space-y-2 text-slate-400">
@@ -491,7 +500,7 @@ const Footer = () => (
             <li><Link to="/students" className="hover:text-white transition-colors">Students</Link></li>
           </ul>
         </div>
-        
+
         <div>
           <h3 className="text-lg font-semibold mb-4">Company</h3>
           <ul className="space-y-2 text-slate-400">
@@ -501,7 +510,7 @@ const Footer = () => (
             <li><Link to="/" className="hover:text-white transition-colors">Contact</Link></li>
           </ul>
         </div>
-        
+
         <div>
           <h3 className="text-lg font-semibold mb-4">Legal</h3>
           <ul className="space-y-2 text-slate-400">
@@ -512,7 +521,7 @@ const Footer = () => (
           </ul>
         </div>
       </div>
-      
+
       <div className="border-t border-slate-800 mt-12 pt-8 text-center text-slate-400">
         <p>&copy; 2024 AI EduPredict. All rights reserved.</p>
       </div>
