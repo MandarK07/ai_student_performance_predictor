@@ -1,30 +1,22 @@
-from sqlalchemy import text
-"""
-Database connection and session management for PostgreSQL
-"""
 import os
 from typing import Generator
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from src.core.config import settings
 
 # Database configuration
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:password@localhost:5432/student_performance_db"
-)
+DATABASE_URL = settings.get_database_url
+
+print(f"INFO: Connecting to database at {DATABASE_URL.split('@')[-1]}")
 
 # Create SQLAlchemy engine
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # Verify connections before using
-    pool_size=10,  # Connection pool size
-    max_overflow=20,  # Max connections beyond pool_size
-    echo=False  # Set to True for SQL query logging
+    pool_size=settings.DB_PORT != 5432 and 5 or 10,  # Smaller pool for cloud DBs
+    max_overflow=20,
+    echo=False
 )
 
 # Create SessionLocal class
@@ -57,14 +49,14 @@ def test_connection():
         db = SessionLocal()
         db.execute(text("SELECT 1"))
         db.close()
-        print("✅ Database connection successful!")
+        print("Database connection successful!")
         return True
     except Exception as e:
-        print(f"❌ Database connection failed: {e}")
+        print(f"Database connection failed: {e}")
         return False
 
 # Initialize database tables
 def init_db():
     """Create all tables in the database"""
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables initialized!")
+    print("Database tables initialized!")

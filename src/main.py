@@ -7,8 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
-load_dotenv()
-
+from src.core.config import settings
 from src.api.admin import router as admin_router
 from src.api.auth import router as auth_router
 from src.api.dashboard import router as dashboard_router
@@ -19,14 +18,7 @@ from src.api.upload import router as upload_router
 from src.auth.bootstrap import ensure_admin_user
 from src.database.connection import test_connection
 
-
-def _get_frontend_origins() -> list[str]:
-    raw_origins = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    origins = [origin.strip().rstrip("/") for origin in raw_origins.split(",") if origin.strip()]
-    return origins or ["http://localhost:5173"]
-
-
-FRONTEND_ORIGINS = _get_frontend_origins()
+FRONTEND_ORIGINS = settings.cors_origins
 PRIMARY_FRONTEND_URL = FRONTEND_ORIGINS[0]
 
 
