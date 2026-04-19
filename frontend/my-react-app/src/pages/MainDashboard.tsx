@@ -3,6 +3,8 @@ import { fetchStudentPerformance, fetchStudents } from "../api/students";
 import { getAtRiskStudents, type AtRiskStudent } from "../api/predict";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import CustomTooltip from "../components/charts/CustomTooltip";
 
 type DashboardMetrics = {
   totalStudents: number;
@@ -20,19 +22,7 @@ function normalizeConfidence(value: number | null | undefined): string {
   return `${percentage.toFixed(1)}%`;
 }
 
-function widthClass(ratio: number): string {
-  if (ratio >= 0.9) return "w-11/12";
-  if (ratio >= 0.8) return "w-10/12";
-  if (ratio >= 0.7) return "w-9/12";
-  if (ratio >= 0.6) return "w-8/12";
-  if (ratio >= 0.5) return "w-7/12";
-  if (ratio >= 0.4) return "w-6/12";
-  if (ratio >= 0.3) return "w-5/12";
-  if (ratio >= 0.2) return "w-4/12";
-  if (ratio >= 0.1) return "w-3/12";
-  if (ratio > 0) return "w-2/12";
-  return "w-0";
-}
+
 
 export default function MainDashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
@@ -52,7 +42,7 @@ export default function MainDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [students, atRisk] = await Promise.all([fetchStudents({ limit: 100 }), getAtRiskStudents()]);
+        const [students, atRisk] = await Promise.all([fetchStudents({ limit: 500 }), getAtRiskStudents()]);
 
         const performanceByStudent = await Promise.all(
           students.map(async (student) => {
@@ -180,33 +170,48 @@ export default function MainDashboard() {
             <h2 className="text-lg font-semibold text-slate-900">Risk Distribution</h2>
             <Badge variant="warning">Live</Badge>
           </div>
-          <div className="space-y-3">
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-slate-600">
-                <span>High/Critical</span>
-                <span>{metrics.highRisk}</span>
+          <div className="h-48 w-full mt-2">
+            {metrics.totalStudents === 0 ? (
+              <div className="flex h-full items-center justify-center text-sm text-slate-500">No data available</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip content={<CustomTooltip />} />
+                  <Pie
+                    data={[
+                      { name: "High/Critical Risk", value: metrics.highRisk, color: "#ef4444" },
+                      { name: "Low Risk", value: metrics.lowRisk, color: "#10b981" },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                    animationDuration={1000}
+                    stroke="none"
+                  >
+                    {[
+                      { name: "High/Critical Risk", value: metrics.highRisk, color: "#ef4444" },
+                      { name: "Low Risk", value: metrics.lowRisk, color: "#10b981" },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity outline-none" style={{ outline: 'none' }} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+          <div className="flex justify-center gap-4 mt-2">
+            {[
+              { name: "High/Critical", value: metrics.highRisk, color: "#ef4444" },
+              { name: "Low Risk", value: metrics.lowRisk, color: "#10b981" },
+            ].map((entry, index) => (
+              <div key={index} className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-xs font-medium text-slate-600">{entry.name} <span className="font-bold text-slate-900">{entry.value}</span></span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className={`h-full rounded-full bg-red-500 transition-all duration-500 ${widthClass(
-                    metrics.totalStudents ? metrics.highRisk / metrics.totalStudents : 0
-                  )}`}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-slate-600">
-                <span>Other Students</span>
-                <span>{metrics.lowRisk}</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className={`h-full rounded-full bg-emerald-500 transition-all duration-500 ${widthClass(
-                    metrics.totalStudents ? metrics.lowRisk / metrics.totalStudents : 0
-                  )}`}
-                />
-              </div>
-            </div>
+            ))}
           </div>
         </Card>
       </div>

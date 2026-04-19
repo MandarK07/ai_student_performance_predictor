@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import StudentsTable, { type StudentRisk, type StudentRow } from "../components/students/StudentsTable";
 import { fetchStudentPerformance, fetchStudents } from "../api/students";
 
@@ -27,66 +27,69 @@ export default function Students() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  const loadStudents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const students = await fetchStudents({ limit: 500 });
 
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const students = await fetchStudents({ limit: 100 });
+      const withPerformance = await Promise.all(
+        students.map(async (student) => {
+          try {
+            const performance = await fetchStudentPerformance(student.student_code);
+            return { student, performance };
+          } catch {
+            return { student, performance: null };
+          }
+        })
+      );
 
-        const withPerformance = await Promise.all(
-          students.map(async (student) => {
-            try {
-              const performance = await fetchStudentPerformance(student.student_code);
-              return { student, performance };
-            } catch {
-              return { student, performance: null };
+      setRows(
+        withPerformance.map(({ student, performance }) => {
+          // Find the best available attendance value from any academic record
+          let attendance: number | null = null;
+          if (performance?.academic_history) {
+            for (const record of performance.academic_history) {
+              if (record.attendance_rate !== null && record.attendance_rate !== undefined) {
+                attendance = record.attendance_rate;
+                break;
+              }
             }
-          })
-        );
+          }
+          // Normalize: if stored as decimal (0.0-1.0), convert to percentage
+          if (attendance !== null && attendance > 0 && attendance <= 1) {
+            attendance = attendance * 100;
+          }
 
-        if (!active) {
-          return;
-        }
-
-        setRows(
-          withPerformance.map(({ student, performance }) => ({
+          return {
             studentCode: student.student_code,
             name: `${student.first_name} ${student.last_name}`,
             email: student.email,
             status: student.status,
             predictedGpa: performance?.latest_prediction?.predicted_gpa ?? null,
-            attendance: performance?.academic_history?.[0]?.attendance_rate ?? null,
+            attendance,
             risk: normalizeRisk(performance?.latest_prediction?.risk_level),
-          }))
-        );
-      } catch (err) {
-        if (!active) {
-          return;
-        }
-        setError(err instanceof Error ? err.message : "Failed to load students");
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
-    return () => {
-      active = false;
-    };
+          };
+        })
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load students");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadStudents();
+  }, [loadStudents]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Student Management</h1>
-        <p className="text-sm text-slate-500">Search, filter, review risk level, and manage student records.</p>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Student Management</h1>
+        <p className="text-sm text-slate-500 mt-1">Search, filter, review risk level, and manage student records.</p>
       </div>
-      <StudentsTable rows={rows} loading={loading} error={error} />
+      <StudentsTable rows={rows} loading={loading} error={error} onRefresh={loadStudents} />
     </div>
   );
 }
