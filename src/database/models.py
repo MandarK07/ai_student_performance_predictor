@@ -54,7 +54,7 @@ class Parent(Base):
     parent_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     student_id = Column(UUID(as_uuid=True), ForeignKey('students.student_id', ondelete='CASCADE'), nullable=False)
     name = Column(String(200), nullable=False)
-    relation = Column(String(50))
+    relation = Column("relationship", String(50))
     education_level = Column(String(100))
     occupation = Column(String(200))
     phone = Column(String(20))

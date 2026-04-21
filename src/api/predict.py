@@ -1,10 +1,11 @@
 """Prediction API endpoints with database integration"""
-from fastapi import APIRouter, HTTPException, Depends
+from datetime import date, datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from datetime import datetime
 import pandas as pd
-from typing import Optional
 
 from src.auth.dependencies import require_roles, require_self_or_roles, _resolve_student_for_user
 from src.database.connection import get_db
@@ -54,6 +55,52 @@ class PredictionResponse(BaseModel):
     risk_level: str
     recommendation: str
     prediction_date: datetime
+
+
+class CreateInterventionRequest(BaseModel):
+    intervention_type: str = Field(..., pattern="^(Tutoring|Counseling|Study Group|Time Management|Mentorship|Resource Allocation|Other)$")
+    priority: str = Field(..., pattern="^(Low|Medium|High|Urgent)$")
+    description: str = Field(..., min_length=10, max_length=1000)
+    assigned_to: Optional[str] = Field(None, max_length=200)
+    due_date: Optional[date] = None
+
+
+class InterventionResponse(BaseModel):
+    intervention_id: str
+    student_code: str
+    prediction_id: str
+    intervention_type: str
+    priority: str
+    status: str
+    description: str
+    assigned_to: Optional[str]
+    due_date: Optional[date]
+    created_at: datetime
+
+
+class GuardianContactItem(BaseModel):
+    parent_id: str
+    name: str
+    relation: Optional[str]
+    email: Optional[str]
+    phone: Optional[str]
+    is_primary_contact: bool
+
+
+class GuardianContactResponse(BaseModel):
+    student_code: str
+    student_name: str
+    contacts: list[GuardianContactItem]
+
+
+class CreateGuardianContactRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=200)
+    relation: str = Field(..., pattern="^(Mother|Father|Guardian|Other)$")
+    email: Optional[str] = Field(None, max_length=255)
+    phone: Optional[str] = Field(None, max_length=20)
+    education_level: Optional[str] = Field(None, max_length=100)
+    occupation: Optional[str] = Field(None, max_length=200)
+    is_primary_contact: bool = True
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
@@ -263,3 +310,162 @@ async def get_at_risk_students(
         "count": len(at_risk),
         "students": at_risk
     }
+
+
+@router.get("/at-risk-students/{student_code}/guardian-contact", response_model=GuardianContactResponse)
+async def get_guardian_contact(
+    student_code: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles(*AT_RISK_ROLES))
+):
+    """Fetch guardian contacts for an at-risk student."""
+    student = crud.get_student_by_code(db, student_code)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    contacts = crud.get_student_parents(db, student.student_id)
+    if not contacts:
+        raise HTTPException(status_code=404, detail="No guardian contacts found for this student")
+
+    crud.create_audit_log(
+        db,
+        {
+            "user_id": current_user.user_id,
+            "action": "guardian.contact.viewed",
+            "table_name": "parents",
+            "record_id": student.student_id,
+            "new_values": {"student_code": student.student_code, "contact_count": len(contacts)},
+        },
+    )
+
+    return GuardianContactResponse(
+        student_code=student.student_code,
+        student_name=f"{student.first_name} {student.last_name}",
+        contacts=[
+            GuardianContactItem(
+                parent_id=str(contact.parent_id),
+                name=contact.name,
+                relation=contact.relation,
+                email=contact.email,
+                phone=contact.phone,
+                is_primary_contact=bool(contact.is_primary_contact),
+            )
+            for contact in contacts
+        ],
+    )
+
+
+@router.post("/at-risk-students/{student_code}/guardian-contact", response_model=GuardianContactItem, status_code=201)
+async def create_guardian_contact(
+    student_code: str,
+    payload: CreateGuardianContactRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles(*AT_RISK_ROLES))
+):
+    """Create a guardian contact for a student from the At-Risk workflow."""
+    student = crud.get_student_by_code(db, student_code)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if not payload.email and not payload.phone:
+        raise HTTPException(status_code=400, detail="Provide at least an email or phone number for the guardian")
+
+    contact = crud.create_parent(
+        db,
+        {
+            "student_id": student.student_id,
+            "name": payload.name.strip(),
+            "relation": payload.relation,
+            "education_level": payload.education_level.strip() if payload.education_level else None,
+            "occupation": payload.occupation.strip() if payload.occupation else None,
+            "phone": payload.phone.strip() if payload.phone else None,
+            "email": payload.email.strip().lower() if payload.email else None,
+            "is_primary_contact": payload.is_primary_contact,
+        },
+    )
+
+    crud.create_audit_log(
+        db,
+        {
+            "user_id": current_user.user_id,
+            "action": "guardian.contact.created",
+            "table_name": "parents",
+            "record_id": contact.parent_id,
+            "new_values": {
+                "student_code": student.student_code,
+                "relation": contact.relation,
+                "is_primary_contact": bool(contact.is_primary_contact),
+            },
+        },
+    )
+
+    return GuardianContactItem(
+        parent_id=str(contact.parent_id),
+        name=contact.name,
+        relation=contact.relation,
+        email=contact.email,
+        phone=contact.phone,
+        is_primary_contact=bool(contact.is_primary_contact),
+    )
+
+
+@router.post("/at-risk-students/{student_code}/interventions", response_model=InterventionResponse, status_code=201)
+async def create_manual_intervention(
+    student_code: str,
+    payload: CreateInterventionRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles(*AT_RISK_ROLES))
+):
+    """Create a manual intervention for the student's latest at-risk prediction."""
+    student = crud.get_student_by_code(db, student_code)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    latest_prediction = crud.get_latest_prediction(db, student.student_id)
+    if not latest_prediction:
+        raise HTTPException(status_code=404, detail="No prediction found for this student")
+
+    if latest_prediction.risk_level not in {"High", "Critical"}:
+        raise HTTPException(status_code=400, detail="Manual interventions can only be created for high-risk students")
+
+    intervention = crud.create_intervention(
+        db,
+        {
+            "prediction_id": latest_prediction.prediction_id,
+            "intervention_type": payload.intervention_type,
+            "priority": payload.priority,
+            "description": payload.description.strip(),
+            "assigned_to": payload.assigned_to.strip() if payload.assigned_to else None,
+            "due_date": payload.due_date,
+            "status": "pending",
+        },
+    )
+
+    crud.create_audit_log(
+        db,
+        {
+            "user_id": current_user.user_id,
+            "action": "intervention.created",
+            "table_name": "interventions",
+            "record_id": intervention.intervention_id,
+            "new_values": {
+                "student_code": student.student_code,
+                "prediction_id": str(latest_prediction.prediction_id),
+                "intervention_type": intervention.intervention_type,
+                "priority": intervention.priority,
+            },
+        },
+    )
+
+    return InterventionResponse(
+        intervention_id=str(intervention.intervention_id),
+        student_code=student.student_code,
+        prediction_id=str(latest_prediction.prediction_id),
+        intervention_type=intervention.intervention_type,
+        priority=intervention.priority,
+        status=intervention.status,
+        description=intervention.description,
+        assigned_to=intervention.assigned_to,
+        due_date=intervention.due_date,
+        created_at=intervention.created_at,
+    )
