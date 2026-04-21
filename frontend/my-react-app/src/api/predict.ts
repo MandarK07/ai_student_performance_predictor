@@ -58,6 +58,52 @@ export interface AtRiskStudentsResponse {
   students: AtRiskStudent[];
 }
 
+export interface CreateInterventionRequest {
+  intervention_type: "Tutoring" | "Counseling" | "Study Group" | "Time Management" | "Mentorship" | "Resource Allocation" | "Other";
+  priority: "Low" | "Medium" | "High" | "Urgent";
+  description: string;
+  assigned_to?: string;
+  due_date?: string;
+}
+
+export interface InterventionResponse {
+  intervention_id: string;
+  student_code: string;
+  prediction_id: string;
+  intervention_type: string;
+  priority: string;
+  status: string;
+  description: string;
+  assigned_to?: string | null;
+  due_date?: string | null;
+  created_at: string;
+}
+
+export interface GuardianContact {
+  parent_id: string;
+  name: string;
+  relation?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  is_primary_contact: boolean;
+}
+
+export interface GuardianContactResponse {
+  student_code: string;
+  student_name: string;
+  contacts: GuardianContact[];
+}
+
+export interface CreateGuardianContactRequest {
+  name: string;
+  relation: "Mother" | "Father" | "Guardian" | "Other";
+  email?: string;
+  phone?: string;
+  education_level?: string;
+  occupation?: string;
+  is_primary_contact?: boolean;
+}
+
 export interface UploadCsvResponse {
   message: string;
   total_records: number;
@@ -111,6 +157,51 @@ export async function getAtRiskStudents(): Promise<AtRiskStudentsResponse> {
     throw new Error("Failed to fetch at-risk students");
   }
   
+  return await response.json();
+}
+
+export async function createIntervention(studentCode: string, data: CreateInterventionRequest): Promise<InterventionResponse> {
+  const response = await apiFetch(`/at-risk-students/${encodeURIComponent(studentCode)}/interventions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Failed to create intervention");
+  }
+
+  return await response.json();
+}
+
+export async function getGuardianContacts(studentCode: string): Promise<GuardianContactResponse> {
+  const response = await apiFetch(`/at-risk-students/${encodeURIComponent(studentCode)}/guardian-contact`);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Failed to fetch guardian contacts");
+  }
+
+  return await response.json();
+}
+
+export async function createGuardianContact(studentCode: string, data: CreateGuardianContactRequest): Promise<GuardianContact> {
+  const response = await apiFetch(`/at-risk-students/${encodeURIComponent(studentCode)}/guardian-contact`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Failed to create guardian contact");
+  }
+
   return await response.json();
 }
 

@@ -3,7 +3,7 @@ CRUD operations for database models
 """
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc, and_, or_
+from sqlalchemy import desc, and_, func, or_
 from datetime import datetime
 import uuid
 
@@ -76,6 +76,31 @@ def update_student(db: Session, student_id: uuid.UUID, update_data: dict) -> Opt
 
 def get_student_by_email(db: Session, email: str):
     return db.query(Student).filter(Student.email == email).first()
+
+
+def get_student_parents(db: Session, student_id: uuid.UUID) -> List[Parent]:
+    """Get guardian contacts for a student, prioritizing the primary contact."""
+    return db.query(Parent).filter(
+        Parent.student_id == student_id
+    ).order_by(
+        desc(Parent.is_primary_contact),
+        Parent.created_at.asc()
+    ).all()
+
+
+def create_parent(db: Session, parent_data: dict) -> Parent:
+    """Create a guardian contact for a student."""
+    if parent_data.get("is_primary_contact"):
+        db.query(Parent).filter(
+            Parent.student_id == parent_data["student_id"],
+            Parent.is_primary_contact == True
+        ).update({"is_primary_contact": False})
+
+    parent = Parent(**parent_data)
+    db.add(parent)
+    db.commit()
+    db.refresh(parent)
+    return parent
 
 
 # =============================================================================
@@ -184,7 +209,14 @@ def get_predictions_by_risk_level(
 
 
 def get_at_risk_students(db: Session) -> List[dict]:
-    """Get students with high or critical risk levels"""
+    """Get students whose latest prediction is high or critical risk."""
+    latest_prediction_subquery = db.query(
+        Prediction.student_id.label("student_id"),
+        func.max(Prediction.prediction_date).label("latest_prediction_date")
+    ).group_by(
+        Prediction.student_id
+    ).subquery()
+
     results = db.query(
         Student.student_code,
         Student.first_name,
@@ -195,10 +227,14 @@ def get_at_risk_students(db: Session) -> List[dict]:
         Prediction.confidence_score,
         Prediction.recommendation
     ).join(
+        latest_prediction_subquery,
+        Student.student_id == latest_prediction_subquery.c.student_id
+    ).join(
         Prediction, Student.student_id == Prediction.student_id
     ).filter(
         and_(
             Student.status == 'active',
+            Prediction.prediction_date == latest_prediction_subquery.c.latest_prediction_date,
             Prediction.risk_level.in_(['High', 'Critical'])
         )
     ).order_by(desc(Prediction.prediction_date)).all()
