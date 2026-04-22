@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Download, FileText, Printer } from "lucide-react";
+import { Download } from "lucide-react";
 import { fetchStudentDashboard } from "../api/dashboard";
 import { fetchStudentProfile, type StudentProfileResponse } from "../api/students";
 import Badge from "../components/ui/Badge";

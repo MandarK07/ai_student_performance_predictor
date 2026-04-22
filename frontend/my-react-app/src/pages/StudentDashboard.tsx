@@ -9,7 +9,8 @@ import {
   ArrowUpRight,
   User,
   Activity,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react";
 import Badge from "../components/ui/Badge";
 
@@ -76,7 +77,7 @@ export default function StudentDashboard() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard 
             label="Current GPA" 
-            value={hasAcademicData ? data?.academic_metrics?.latest_gpa?.toFixed(2) : "Data Pending"} 
+            value={hasAcademicData ? data?.academic_metrics?.latest_gpa?.toFixed(2) ?? "N/A" : "Data Pending"} 
             icon={<GraduationCap className="h-6 w-6 text-indigo-600" />}
             color="bg-indigo-50"
             subtext={hasAcademicData ? "From latest record" : "Upload your grades"}
@@ -91,7 +92,7 @@ export default function StudentDashboard() {
         />
         <MetricCard 
             label="Attendance Score" 
-            value={hasAttendanceData ? `${data?.academic_metrics?.average_attendance_rate.toFixed(1)}%` : "N/A"} 
+            value={hasAttendanceData ? `${data?.academic_metrics?.average_attendance_rate?.toFixed(1) ?? "0.0"}%` : "N/A"} 
             icon={<Calendar className="h-6 w-6 text-emerald-600" />}
             color="bg-emerald-50"
             subtext={hasAttendanceData ? "Engagement average" : "Attendance not recorded"}
@@ -173,7 +174,6 @@ export default function StudentDashboard() {
   );
 }
 
-import { CheckCircle2 } from "lucide-react";
 
 function MetricCard({ label, value, icon, color, highlight = false, subtext }: { label: string; value: string; icon: React.ReactNode, color: string, highlight?: boolean, subtext?: string }) {
     return (

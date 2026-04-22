@@ -42,19 +42,6 @@ function confidenceToPercent(confidence: number | null | undefined): number {
   return confidence <= 1 ? confidence * 100 : confidence;
 }
 
-function progressClass(score: number): string {
-  if (score >= 90) return "w-11/12";
-  if (score >= 80) return "w-10/12";
-  if (score >= 70) return "w-9/12";
-  if (score >= 60) return "w-8/12";
-  if (score >= 50) return "w-7/12";
-  if (score >= 40) return "w-6/12";
-  if (score >= 30) return "w-5/12";
-  if (score >= 20) return "w-4/12";
-  if (score >= 10) return "w-3/12";
-  if (score > 0) return "w-2/12";
-  return "w-0";
-}
 
 export default function PredictionResult() {
   const [studentCode, setStudentCode] = useState("");
@@ -184,7 +171,7 @@ export default function PredictionResult() {
               </div>
               
               <div className="mt-8 flex items-center justify-center gap-3">
-                <Badge variant={normalizeRisk(prediction.riskLevel)} size="lg" className="px-4 py-1.5 text-sm uppercase font-bold">
+                <Badge variant={normalizeRisk(prediction.riskLevel)} className="px-4 py-1.5 text-sm uppercase font-bold">
                     {prediction.riskLevel} Risk
                 </Badge>
                 <div className="h-4 w-px bg-slate-200" />

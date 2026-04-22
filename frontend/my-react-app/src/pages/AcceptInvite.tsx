@@ -8,7 +8,7 @@ import { useAuth } from "../context/AuthContext";
 export default function AcceptInvite() {
   const { token = "" } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [status, setStatus] = useState<InviteStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,7 +83,6 @@ export default function AcceptInvite() {
             </p>
           </div>
         </div>
-
         <Button onClick={handleAccept} className="w-full">
           Accept Invite
         </Button>

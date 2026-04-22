@@ -11,7 +11,7 @@ import {
   type InvitePreviewResponse,
   type LinkingRequest
 } from "../api/enrollments";
-import { Clock, CheckCircle2, XCircle, UserPlus, Search, ClipboardList } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, UserPlus, ClipboardList } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export default function Invites() {
