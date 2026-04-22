@@ -22,6 +22,7 @@ type StudentsTableProps = {
   loading?: boolean;
   error?: string | null;
   onRefresh?: () => void;
+  canDelete?: boolean;
 };
 
 function riskVariant(risk: StudentRisk): "low" | "medium" | "high" {
@@ -40,7 +41,13 @@ function formatGpa(value: number | null): string {
   return value.toFixed(2);
 }
 
-export default function StudentsTable({ rows, loading = false, error = null, onRefresh }: StudentsTableProps) {
+export default function StudentsTable({
+  rows,
+  loading = false,
+  error = null,
+  onRefresh,
+  canDelete = false,
+}: StudentsTableProps) {
   const [query, setQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState<StudentRisk | "All">("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
@@ -277,13 +284,15 @@ export default function StudentsTable({ rows, loading = false, error = null, onR
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => setDeleteStudent(item)}
-                        title="Delete student"
-                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => setDeleteStudent(item)}
+                          title="Delete student"
+                          className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

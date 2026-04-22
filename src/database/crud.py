@@ -4,14 +4,19 @@ CRUD operations for database models
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, and_, func, or_
-from datetime import datetime
+from datetime import date, datetime
 import uuid
 
 from src.database.models import (
     Student, Parent, AcademicRecord, Course,
     Enrollment, Grade, Prediction, MLModel, Intervention, User, AuthSession, AuditLog,
-    EnrollmentInvite
+    EnrollmentInvite, LinkingRequest
 )
+
+
+PLACEHOLDER_DATE_OF_BIRTH = date(2005, 1, 1)
+PLACEHOLDER_GENDERS = {"prefer not to say"}
+PLACEHOLDER_LAST_NAMES = {"student", "tbd"}
 
 
 # =============================================================================
@@ -47,7 +52,10 @@ def get_students(
     query = db.query(Student)
     if status:
         query = query.filter(Student.status == status)
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(
+        desc(Student.created_at),
+        desc(Student.student_code)
+    ).offset(skip).limit(limit).all()
 
 
 def search_students(db: Session, search_term: str) -> List[Student]:
@@ -76,6 +84,209 @@ def update_student(db: Session, student_id: uuid.UUID, update_data: dict) -> Opt
 
 def get_student_by_email(db: Session, email: str):
     return db.query(Student).filter(Student.email == email).first()
+
+
+def get_students_by_email_case_insensitive(
+    db: Session,
+    email: str,
+    exclude_student_id: Optional[uuid.UUID] = None,
+) -> List[Student]:
+    """Get students by email using case-insensitive comparison."""
+    normalized_email = email.strip().lower()
+    query = db.query(Student).filter(func.lower(Student.email) == normalized_email)
+    if exclude_student_id:
+        query = query.filter(Student.student_id != exclude_student_id)
+    return query.all()
+
+
+def get_student_by_email_case_insensitive(
+    db: Session,
+    email: str,
+    exclude_student_id: Optional[uuid.UUID] = None,
+) -> Optional[Student]:
+    """Get a single student by email when the case-insensitive match is unique."""
+    matches = get_students_by_email_case_insensitive(
+        db, email, exclude_student_id=exclude_student_id
+    )
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
+def find_existing_student_for_link(
+    db: Session,
+    email: str,
+    student_code: Optional[str] = None,
+    exclude_student_id: Optional[uuid.UUID] = None,
+) -> tuple[Optional[Student], Optional[str], Optional[str]]:
+    """Resolve an existing student for invite-linking or repair flows."""
+    code_student = None
+    normalized_code = student_code.strip() if student_code else None
+    if normalized_code:
+        code_student = get_student_by_code(db, normalized_code)
+        if code_student and exclude_student_id and code_student.student_id == exclude_student_id:
+            code_student = None
+
+    email_matches = get_students_by_email_case_insensitive(
+        db, email, exclude_student_id=exclude_student_id
+    )
+    if len(email_matches) > 1:
+        return (
+            None,
+            "Multiple student records match the invited email. Ask your admin/teacher to clean up duplicate student emails first.",
+            None,
+        )
+
+    email_student = email_matches[0] if email_matches else None
+    if code_student and email_student and code_student.student_id != email_student.student_id:
+        return (
+            None,
+            "Student code and email point to different student records. Ask your admin/teacher to correct the invite.",
+            None,
+        )
+
+    if code_student:
+        return code_student, None, "student_code"
+    if email_student:
+        return email_student, None, "email"
+
+    return (
+        None,
+        "No matching student record found. Ask your admin/teacher to upload or correct your student record first.",
+        None,
+    )
+
+
+def has_student_academic_records(db: Session, student_id: uuid.UUID) -> bool:
+    """Return True when the student has at least one academic record."""
+    return (
+        db.query(AcademicRecord.record_id)
+        .filter(AcademicRecord.student_id == student_id)
+        .first()
+        is not None
+    )
+
+
+def is_placeholder_student(db: Session, student: Student) -> bool:
+    """Heuristic for minimal student rows created by legacy enrollment/predict flows."""
+    if has_student_academic_records(db, student.student_id):
+        return False
+
+    last_name = (student.last_name or "").strip().lower()
+    gender = (student.gender or "").strip().lower()
+    email = (student.email or "").strip().lower()
+
+    return any(
+        [
+            student.date_of_birth == PLACEHOLDER_DATE_OF_BIRTH,
+            gender in PLACEHOLDER_GENDERS,
+            last_name in PLACEHOLDER_LAST_NAMES,
+            email.endswith("@student.edu"),
+        ]
+    )
+
+
+def _parent_merge_signatures(parent: Parent) -> set[str]:
+    signatures: set[str] = set()
+    if parent.email:
+        signatures.add(f"email:{parent.email.strip().lower()}")
+    if parent.phone:
+        signatures.add(f"phone:{parent.phone.strip()}")
+    name = (parent.name or "").strip().lower()
+    relation = (parent.relation or "").strip().lower()
+    if name:
+        signatures.add(f"name:{name}|relation:{relation}")
+    return signatures
+
+
+def get_student_merge_conflict(
+    db: Session,
+    source_student: Student,
+    target_student: Student,
+) -> Optional[str]:
+    """Return a human-readable conflict reason when a placeholder merge is unsafe."""
+    if source_student.student_id == target_student.student_id:
+        return "Source and target student are already the same record"
+
+    if has_student_academic_records(db, source_student.student_id):
+        return "Source student already has academic records"
+
+    target_parent_signatures: set[str] = set()
+    for parent in get_student_parents(db, target_student.student_id):
+        target_parent_signatures.update(_parent_merge_signatures(parent))
+
+    for parent in get_student_parents(db, source_student.student_id):
+        if _parent_merge_signatures(parent) & target_parent_signatures:
+            return "Guardian contact conflict detected"
+
+    target_enrollment_keys = {
+        (enrollment.course_id, enrollment.academic_year, enrollment.semester)
+        for enrollment in get_student_enrollments(db, target_student.student_id)
+    }
+    for enrollment in get_student_enrollments(db, source_student.student_id):
+        if (enrollment.course_id, enrollment.academic_year, enrollment.semester) in target_enrollment_keys:
+            return "Enrollment conflict detected"
+
+    return None
+
+
+def merge_student_records(
+    db: Session,
+    source_student: Student,
+    target_student: Student,
+) -> dict:
+    """Move linked data from a placeholder student to the real student and delete the source row."""
+    conflict = get_student_merge_conflict(db, source_student, target_student)
+    if conflict:
+        raise ValueError(conflict)
+
+    target_has_primary_parent = (
+        db.query(Parent.parent_id)
+        .filter(
+            Parent.student_id == target_student.student_id,
+            Parent.is_primary_contact == True,
+        )
+        .first()
+        is not None
+    )
+    if target_has_primary_parent:
+        db.query(Parent).filter(
+            Parent.student_id == source_student.student_id,
+            Parent.is_primary_contact == True,
+        ).update({"is_primary_contact": False}, synchronize_session=False)
+
+    moved_user_count = db.query(User).filter(
+        User.student_id == source_student.student_id
+    ).update({"student_id": target_student.student_id}, synchronize_session=False)
+
+    moved_prediction_count = db.query(Prediction).filter(
+        Prediction.student_id == source_student.student_id
+    ).update({"student_id": target_student.student_id}, synchronize_session=False)
+
+    moved_parent_count = db.query(Parent).filter(
+        Parent.student_id == source_student.student_id
+    ).update({"student_id": target_student.student_id}, synchronize_session=False)
+
+    moved_enrollment_count = db.query(Enrollment).filter(
+        Enrollment.student_id == source_student.student_id
+    ).update({"student_id": target_student.student_id}, synchronize_session=False)
+
+    source_record = db.query(Student).filter(
+        Student.student_id == source_student.student_id
+    ).first()
+    if source_record:
+        db.delete(source_record)
+
+    db.commit()
+
+    return {
+        "moved_users": moved_user_count,
+        "moved_predictions": moved_prediction_count,
+        "moved_parents": moved_parent_count,
+        "moved_enrollments": moved_enrollment_count,
+        "deleted_student_id": str(source_student.student_id),
+        "target_student_id": str(target_student.student_id),
+    }
 
 
 def get_student_parents(db: Session, student_id: uuid.UUID) -> List[Parent]:
@@ -301,6 +512,18 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
 def get_user_by_id(db: Session, user_id: uuid.UUID) -> Optional[User]:
     """Get user by UUID"""
     return db.query(User).filter(User.user_id == user_id).first()
+
+
+def get_user_by_student_id(
+    db: Session,
+    student_id: uuid.UUID,
+    exclude_user_id: Optional[uuid.UUID] = None,
+) -> Optional[User]:
+    """Get the user currently linked to a student record."""
+    query = db.query(User).filter(User.student_id == student_id)
+    if exclude_user_id:
+        query = query.filter(User.user_id != exclude_user_id)
+    return query.first()
 
 
 def create_user(db: Session, user_data: dict) -> User:
@@ -618,3 +841,53 @@ def get_performance_statistics(db: Session, academic_year: str, semester: str) -
         'avg_attendance': round(stats.avg_attendance, 2) if stats.avg_attendance else 0,
         'avg_study_hours': round(stats.avg_study_hours, 2) if stats.avg_study_hours else 0
     }
+
+
+# =============================================================================
+# LINKING REQUESTS
+# =============================================================================
+
+def create_linking_request(db, request_data):
+    """Create a student-initiated linking request."""
+    from src.database.models import LinkingRequest
+    from sqlalchemy import and_
+    
+    # Cancel any existing pending requests for this user
+    db.query(LinkingRequest).filter(
+        and_(
+            LinkingRequest.user_id == request_data["user_id"],
+            LinkingRequest.status == "pending"
+        )
+    ).update({"status": "cancelled"})
+    
+    request = LinkingRequest(**request_data)
+    db.add(request)
+    db.commit()
+    db.refresh(request)
+    return request
+
+def get_linking_requests(db, status=None):
+    """Get all linking requests, optionally filtered by status."""
+    from src.database.models import LinkingRequest
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import desc
+    query = db.query(LinkingRequest).options(joinedload(LinkingRequest.user))
+    if status:
+        query = query.filter(LinkingRequest.status == status)
+    return query.order_by(desc(LinkingRequest.created_at)).all()
+
+def get_linking_request_by_id(db, request_id):
+    """Get a linking request by UUID."""
+    from src.database.models import LinkingRequest
+    return db.query(LinkingRequest).filter(LinkingRequest.request_id == request_id).first()
+
+def get_user_pending_linking_request(db, user_id):
+    """Get a pending linking request for a specific user."""
+    from src.database.models import LinkingRequest
+    from sqlalchemy import and_
+    return db.query(LinkingRequest).filter(
+        and_(
+            LinkingRequest.user_id == user_id,
+            LinkingRequest.status == "pending"
+        )
+    ).first()

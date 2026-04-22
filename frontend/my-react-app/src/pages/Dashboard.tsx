@@ -1,16 +1,20 @@
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import StudentDashboard from "./StudentDashboard";
-import MainDashboard from "./MainDashboard";
 
 export default function Dashboard() {
   const { user } = useAuth();
 
-  if (!user) return null;
-
-  if (user.role === "student") {
-      return <StudentDashboard />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Admin or teacher defaults to the main analytics dashboard
-  return <MainDashboard />;
+  const roleTargets: Record<string, string> = {
+    admin: "/admin-dashboard",
+    teacher: "/teacher-dashboard",
+    student: "/student-dashboard"
+  };
+
+  const target = roleTargets[user.role] || "/admin-dashboard";
+  
+  return <Navigate to={target} replace />;
 }

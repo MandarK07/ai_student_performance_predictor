@@ -6,11 +6,21 @@ export type StudentListItem = {
   first_name: string;
   last_name: string;
   email: string;
-  date_of_birth: string;
+  date_of_birth?: string;
   gender: string;
   enrollment_date: string;
   status: string;
   created_at: string;
+};
+
+export type CreateStudentRequest = {
+  student_code: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  date_of_birth?: string;
+  gender: "Male" | "Female" | "Other" | "Prefer not to say";
+  enrollment_date?: string;
 };
 
 export type StudentPerformanceResponse = {
@@ -42,7 +52,7 @@ export type StudentProfileResponse = {
     last_name: string;
     full_name: string;
     email: string;
-    date_of_birth: string;
+    date_of_birth?: string;
     gender: string;
     enrollment_date: string;
     status: string;
@@ -135,6 +145,20 @@ export async function fetchStudents(params?: {
     throw new Error(payload.detail || "Failed to fetch students");
   }
   return response.json();
+}
+
+export async function createStudent(payload: CreateStudentRequest): Promise<StudentListItem> {
+  const response = await apiFetch("/students", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body.detail || "Failed to create student");
+  }
+  return body;
 }
 
 export async function fetchStudentPerformance(studentCode: string): Promise<StudentPerformanceResponse> {

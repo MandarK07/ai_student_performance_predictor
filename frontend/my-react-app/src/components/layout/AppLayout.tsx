@@ -28,8 +28,7 @@ export default function AppLayout() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50 text-slate-900 font-sans">
-      {/* Full width, fixed top bar */}
-      <div className="z-50 shrink-0">
+      <div className="z-50 shrink-0 no-print">
         <Navbar onToggleSidebar={() => setIsOpen((v) => !v)} />
       </div>
       
@@ -44,7 +43,9 @@ export default function AppLayout() {
         )}
         
         {/* Sidebar begins below Navbar */}
-        <Sidebar isOpen={isOpen} />
+        <div className="no-print">
+          <Sidebar isOpen={isOpen} />
+        </div>
 
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full relative z-0">

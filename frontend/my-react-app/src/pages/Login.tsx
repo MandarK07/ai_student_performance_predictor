@@ -82,11 +82,12 @@ export default function Login() {
       const roleTargets: Record<string, string> = {
         admin: "/admin-dashboard",
         teacher: "/teacher-dashboard",
-        student: "/student-dashboard"
+        student: me.student_id ? "/student-dashboard" : "/enrollment-pending"
       };
       
       const target = roleTargets[me.role] || "/dashboard";
-      navigate(from !== "/dashboard" ? from : target, { replace: true });
+      const redirectUri = (from === "/" || from === "/dashboard" || from === "/login") ? target : from;
+      navigate(redirectUri, { replace: true });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Authentication failed. Please check your credentials.");
     }

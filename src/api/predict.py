@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 import pandas as pd
@@ -12,6 +12,7 @@ from src.database.connection import get_db
 from src.database import crud
 from src.features.preprocess import preprocess_data
 from src.model_loader import get_model_path, load_prediction_artifacts
+from src.services.email_service import send_intervention_email
 
 router = APIRouter()
 PREDICT_ROLES = ("admin", "teacher", "student")
@@ -105,6 +106,7 @@ class CreateGuardianContactRequest(BaseModel):
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
     features: StudentFeatures,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     _current_user=Depends(require_roles(*PREDICT_ROLES))
 ):
@@ -115,7 +117,7 @@ async def predict(
         raise HTTPException(status_code=503, detail="ML model not loaded")
     
     try:
-        # Check if student exists, create if not
+        # Check if student exists
         student = crud.get_student_by_code(db, features.student_code)
 
         # Students may only predict for themselves (email-linked)
@@ -125,17 +127,7 @@ async def predict(
                 raise HTTPException(status_code=403, detail="Students can only run predictions for their own code")
             student = self_student
         if not student:
-            # Create new student record
-            student_data = {
-                "student_code": features.student_code,
-                "first_name": features.student_code.split("-")[0] if "-" in features.student_code else "Student",
-                "last_name": "TBD",
-                "email": f"{features.student_code}@student.edu",
-                "date_of_birth": datetime(2005, 1, 1).date(),
-                "gender": features.gender,
-                "enrollment_date": datetime.now().date()
-            }
-            student = crud.create_student(db, student_data)
+            raise HTTPException(status_code=404, detail="Student not found")
         
         # Prepare data for model
         input_data = {
@@ -250,6 +242,16 @@ async def predict(
             }
 
             crud.create_intervention(db, intervention_data)
+            
+            # Send notification email
+            background_tasks.add_task(
+                send_intervention_email,
+                student.email,
+                f"{student.first_name} {student.last_name}",
+                intervention_type,
+                recommendation
+            )
+            
             print("Mapped intervention type:", intervention_type)
         
         return PredictionResponse(
@@ -263,6 +265,8 @@ async def predict(
             prediction_date=db_prediction.prediction_date
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
@@ -413,6 +417,7 @@ async def create_guardian_contact(
 async def create_manual_intervention(
     student_code: str,
     payload: CreateInterventionRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user=Depends(require_roles(*AT_RISK_ROLES))
 ):
@@ -455,6 +460,15 @@ async def create_manual_intervention(
                 "priority": intervention.priority,
             },
         },
+    )
+    
+    # Send notification email
+    background_tasks.add_task(
+        send_intervention_email,
+        student.email,
+        f"{student.first_name} {student.last_name}",
+        intervention.intervention_type,
+        intervention.description
     )
 
     return InterventionResponse(

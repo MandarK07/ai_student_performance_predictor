@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { acceptInvite, getInviteStatus } from "../api/enrollments";
+import { acceptInvite, getInviteStatus, type InviteStatus } from "../api/enrollments";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { useAuth } from "../context/AuthContext";
@@ -8,23 +8,17 @@ import { useAuth } from "../context/AuthContext";
 export default function AcceptInvite() {
   const { token = "" } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
-  const [status, setStatus] = useState<any | null>(null);
+  const [status, setStatus] = useState<InviteStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [studentCode, setStudentCode] = useState("");
 
   useEffect(() => {
     const run = async () => {
       try {
         const s = await getInviteStatus(token);
         setStatus(s);
-        setFirstName(s.first_name || "");
-        setLastName(s.last_name || "");
-        setStudentCode(s.student_code || "");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Invite invalid");
       } finally {
@@ -37,7 +31,8 @@ export default function AcceptInvite() {
   const handleAccept = async () => {
     setError(null);
     try {
-      await acceptInvite({ token, first_name: firstName || undefined, last_name: lastName || undefined, student_code: studentCode || undefined });
+      await acceptInvite({ token });
+      await refreshUser();
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept invite");
@@ -46,6 +41,7 @@ export default function AcceptInvite() {
 
   if (loading) return <div className="flex min-h-screen items-center justify-center">Loading invite...</div>;
   if (error) return <div className="flex min-h-screen items-center justify-center text-red-600">{error}</div>;
+  if (!status) return <div className="flex min-h-screen items-center justify-center text-red-600">Invite details are unavailable.</div>;
 
   if (!user || user.role !== "student") {
     return (
@@ -69,19 +65,24 @@ export default function AcceptInvite() {
 
         <div className="grid gap-3">
           <div>
-            <label className="text-xs text-slate-600">First Name</label>
-            <input className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            <p className="text-xs uppercase tracking-wide text-slate-500">Student Code</p>
+            <p className="mt-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              {status.student_code || "Not specified on invite"}
+            </p>
           </div>
           <div>
-            <label className="text-xs text-slate-600">Last Name</label>
-            <input className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            <p className="text-xs uppercase tracking-wide text-slate-500">Student Name</p>
+            <p className="mt-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              {[status.first_name, status.last_name].filter(Boolean).join(" ") || "Provided by your admin or teacher"}
+            </p>
           </div>
           <div>
-            <label className="text-xs text-slate-600">Student Code (optional)</label>
-            <input className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" value={studentCode} onChange={(e) => setStudentCode(e.target.value)} />
+            <p className="text-xs uppercase tracking-wide text-slate-500">Linking Rule</p>
+            <p className="mt-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              This invite can only link to an existing student record. If no matching student exists, ask your admin or teacher to upload or correct it first.
+            </p>
           </div>
         </div>
-
         <Button onClick={handleAccept} className="w-full">
           Accept Invite
         </Button>

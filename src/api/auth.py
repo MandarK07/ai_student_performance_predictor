@@ -72,6 +72,7 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     last_login: Optional[datetime]
+    student_id: Optional[uuid.UUID] = None
 
 
 class RegisterResponse(BaseModel):
@@ -445,4 +446,5 @@ async def me(current_user=Depends(get_current_user)):
         role=current_user.role or "student",
         is_active=current_user.is_active,
         last_login=current_user.last_login,
+        student_id=current_user.student_id,
     )
