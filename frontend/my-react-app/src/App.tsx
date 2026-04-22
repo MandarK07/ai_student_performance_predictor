@@ -19,6 +19,7 @@ import UsersManagement from "./pages/UsersManagement";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import AccessDenied from "./pages/AccessDenied";
+import EnrollmentPending from "./pages/EnrollmentPending";
 import AcceptInvite from "./pages/AcceptInvite";
 import Invites from "./pages/Invites";
 
@@ -31,6 +32,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register-user" element={<RegisterUser />} />
         <Route path="/access-denied" element={<AccessDenied />} />
+        <Route path="/enrollment-pending" element={<ProtectedRoute><EnrollmentPending /></ProtectedRoute>} />
         <Route path="/enroll/:token" element={<AcceptInvite />} />
 
         <Route

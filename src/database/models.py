@@ -31,7 +31,7 @@ class Student(Base):
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    date_of_birth = Column(Date, nullable=False)
+    date_of_birth = Column(Date, nullable=True)
     gender = Column(String(20))
     enrollment_date = Column(Date, nullable=False, default=date.today)
     status = Column(String(20), default='active')
@@ -355,3 +355,25 @@ class EnrollmentInvite(Base):
 
     def __repr__(self):
         return f"<EnrollmentInvite {self.email} status={self.status}>"
+
+
+class LinkingRequest(Base):
+    __tablename__ = "linking_requests"
+
+    request_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.user_id', ondelete='CASCADE'), nullable=False)
+    student_code = Column(String(50))
+    email = Column(String(255), nullable=False)
+    full_name = Column(String(200))
+    status = Column(String(20), default="pending")  # pending, approved, rejected, cancelled
+    admin_notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    resolved_at = Column(DateTime)
+    resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.user_id"))
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    resolver = relationship("User", foreign_keys=[resolved_by])
+
+    def __repr__(self):
+        return f"<LinkingRequest {self.email} status={self.status}>"

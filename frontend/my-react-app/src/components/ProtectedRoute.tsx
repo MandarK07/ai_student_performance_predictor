@@ -27,5 +27,13 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     return <Navigate to="/access-denied" replace />;
   }
 
+  // Redirect unlinked students to enrollment-pending
+  const isOnboardingPath = location.pathname.startsWith("/enrollment-pending") || 
+                          location.pathname.startsWith("/enroll/");
+                          
+  if (user.role === "student" && !user.student_id && !isOnboardingPath) {
+    return <Navigate to="/enrollment-pending" replace />;
+  }
+
   return children;
 }

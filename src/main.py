@@ -16,7 +16,7 @@ from src.api.predict import router as predict_router
 from src.api.students import router as students_router
 from src.api.upload import router as upload_router
 from src.auth.bootstrap import ensure_admin_user
-from src.database.connection import test_connection
+from src.database.connection import test_connection, init_db
 
 FRONTEND_ORIGINS = settings.cors_origins
 PRIMARY_FRONTEND_URL = FRONTEND_ORIGINS[0]
@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI):
 
     if test_connection():
         print("Database connection successful")
+        init_db()
         ensure_admin_user()
     else:
         print("Database connection failed - some features may not work")

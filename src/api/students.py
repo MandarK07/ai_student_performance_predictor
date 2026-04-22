@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field, EmailStr
 from datetime import date, datetime
 from typing import List, Optional
+import uuid
 
 from src.auth.dependencies import require_roles, require_self_or_roles
 from src.database.connection import get_db
@@ -21,7 +22,7 @@ class StudentCreate(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
-    date_of_birth: date
+    date_of_birth: Optional[date] = None
     gender: str = Field(..., pattern="^(Male|Female|Other|Prefer not to say)$")
     enrollment_date: Optional[date] = None
 
@@ -32,7 +33,7 @@ class StudentResponse(BaseModel):
     first_name: str
     last_name: str
     email: str
-    date_of_birth: date
+    date_of_birth: Optional[date]
     gender: str
     enrollment_date: date
     status: str
@@ -209,17 +210,24 @@ async def create_student(
     """
     Create a new student record
     """
+    normalized_student_code = student.student_code.strip()
+    normalized_email = student.email.strip().lower()
+
     # Check if student code already exists
-    existing = crud.get_student_by_code(db, student.student_code)
+    existing = crud.get_student_by_code(db, normalized_student_code)
     if existing:
         raise HTTPException(status_code=400, detail="Student code already exists")
     
     # Check if email already exists
-    existing_email = db.query(Student).filter(Student.email == student.email).first()
+    existing_email = crud.get_student_by_email_case_insensitive(db, normalized_email)
     if existing_email:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    student_data = student.dict()
+    student_data = student.model_dump()
+    student_data["student_code"] = normalized_student_code
+    student_data["first_name"] = student.first_name.strip()
+    student_data["last_name"] = student.last_name.strip()
+    student_data["email"] = normalized_email
     if not student_data.get('enrollment_date'):
         student_data['enrollment_date'] = date.today()
     

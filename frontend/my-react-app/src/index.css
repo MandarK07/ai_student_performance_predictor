@@ -13,3 +13,57 @@
     @apply bg-slate-100 text-slate-900 antialiased;
   }
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background-color: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl {
+    box-shadow: none !important;
+  }
+  
+  .border {
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* Ensure page breaks don't happen in the middle of a card */
+  .card, div[class*="rounded-"] {
+    break-inside: avoid;
+  }
+  
+  /* Force white background for printing to avoid grey shading */
+  *, .bg-slate-50, .bg-slate-100, .bg-indigo-50, .bg-white {
+    background-color: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
+  }
+
+  .border, .border-slate-200, .border-indigo-100 {
+    border: 1px solid #000 !important;
+  }
+
+  .text-indigo-900, .text-slate-900, .text-indigo-600 {
+    color: #000 !important;
+  }
+
+  .bg-indigo-50 {
+    border-bottom: 2px solid #000 !important;
+  }
+}
+
+.print-only {
+  display: none;
+}

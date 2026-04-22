@@ -8,6 +8,7 @@ export type AuthUser = {
   role: string;
   is_active: boolean;
   last_login: string | null;
+  student_id: string | null;
 };
 
 export type RegisterUserRequest = {

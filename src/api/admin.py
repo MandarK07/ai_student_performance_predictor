@@ -21,6 +21,7 @@ class UserSummaryResponse(BaseModel):
     role: str
     is_active: bool
     last_login: Optional[datetime]
+    student_id: Optional[str] = None
 
 # Schema for Audit log response
 class AuditLogResponse(BaseModel):
@@ -46,7 +47,8 @@ async def get_all_users(
             full_name=u.full_name,
             role=u.role or "unknown",
             is_active=u.is_active,
-            last_login=u.last_login
+            last_login=u.last_login,
+            student_id=str(u.student_id) if u.student_id else None
         ) for u in users
     ]
 

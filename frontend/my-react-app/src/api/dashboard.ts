@@ -1,6 +1,7 @@
 import { apiFetch } from "./http";
+import type { StudentProfileResponse } from "./students";
 
-export type StudentDashboardPayload = any;
+export type StudentDashboardPayload = StudentProfileResponse;
 
 export async function fetchStudentDashboard(): Promise<StudentDashboardPayload> {
   const response = await apiFetch("/dashboard/student/me");

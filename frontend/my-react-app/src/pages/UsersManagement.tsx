@@ -13,6 +13,7 @@ type UserSummary = {
   full_name: string;
   role: string;
   is_active: boolean;
+  student_id: string | null;
 };
 
 type EditingUser = {
@@ -184,6 +185,7 @@ export default function UsersManagement() {
                   <th className="px-6 py-3.5">Email</th>
                   <th className="px-6 py-3.5">Role</th>
                   <th className="px-6 py-3.5">Status</th>
+                  <th className="px-6 py-3.5">Linking</th>
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -211,6 +213,17 @@ export default function UsersManagement() {
                       <Badge variant={u.is_active ? "success" : "danger"}>
                         {u.is_active ? "Active" : "Inactive"}
                       </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      {u.role === "student" ? (
+                        u.student_id ? (
+                          <Badge variant="success">Linked</Badge>
+                        ) : (
+                          <Badge variant="warning">Unlinked</Badge>
+                        )
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
