@@ -3,9 +3,10 @@ from contextlib import asynccontextmanager
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.core.config import settings
 from src.api.admin import router as admin_router
@@ -19,7 +20,7 @@ from src.auth.bootstrap import ensure_admin_user, ensure_demo_users
 from src.database.connection import test_connection, init_db
 
 FRONTEND_ORIGINS = settings.cors_origins
-PRIMARY_FRONTEND_URL = FRONTEND_ORIGINS[0]
+PRIMARY_FRONTEND_URL = FRONTEND_ORIGINS[0] if FRONTEND_ORIGINS else "http://localhost:5173"
 
 
 @asynccontextmanager
@@ -64,6 +65,25 @@ app.include_router(auth_router, prefix="/api", tags=["Authentication"])
 app.include_router(admin_router, prefix="/api", tags=["Admin"])
 app.include_router(dashboard_router, prefix="/api", tags=["Dashboard"])
 app.include_router(enrollments_router, prefix="/api", tags=["Enrollments"])
+
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch-all exception handler to log errors and return a JSON response."""
+    logger.error(f"Unhandled error at {request.method} {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal Server Error",
+            "message": str(exc),
+            "path": request.url.path
+        }
+    )
 
 
 @app.get("/", response_class=HTMLResponse)

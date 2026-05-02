@@ -50,6 +50,37 @@ class StudentUpdate(BaseModel):
     status: Optional[str] = None
 
 
+class AcademicRecordSummary(BaseModel):
+    academic_year: str
+    semester: str
+    gpa: Optional[float]
+    attendance_rate: Optional[float]
+    study_hours_per_week: Optional[float]
+
+    class Config:
+        from_attributes = True
+
+
+class PredictionSummary(BaseModel):
+    predicted_gpa: Optional[float]
+    category: Optional[str]
+    confidence: Optional[float]
+    risk_level: Optional[str]
+    recommendation: Optional[str]
+    date: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class StudentPerformanceResponse(BaseModel):
+    student_code: str
+    full_name: str
+    email: str
+    academic_history: List[AcademicRecordSummary]
+    latest_prediction: Optional[PredictionSummary]
+
+
 def _average(values: List[Optional[float]]) -> Optional[float]:
     valid = [v for v in values if v is not None]
     if not valid:
@@ -325,7 +356,7 @@ async def get_student(
     )
 
 
-@router.get("/students/{student_code}/performance")
+@router.get("/students/{student_code}/performance", response_model=StudentPerformanceResponse)
 async def get_student_performance(
     student_code: str,
     db: Session = Depends(get_db),
@@ -344,29 +375,29 @@ async def get_student_performance(
     # Get latest prediction
     latest_prediction = crud.get_latest_prediction(db, student.student_id)
     
-    return {
-        "student_code": student_code,
-        "full_name": f"{student.first_name} {student.last_name}",
-        "email": student.email,
-        "academic_history": [
-            {
-                "academic_year": ar.academic_year,
-                "semester": ar.semester,
-                "gpa": ar.gpa,
-                "attendance_rate": ar.attendance_rate,
-                "study_hours_per_week": ar.study_hours_per_week
-            }
+    return StudentPerformanceResponse(
+        student_code=student_code,
+        full_name=f"{student.first_name} {student.last_name}",
+        email=student.email,
+        academic_history=[
+            AcademicRecordSummary(
+                academic_year=ar.academic_year,
+                semester=ar.semester,
+                gpa=ar.gpa,
+                attendance_rate=ar.attendance_rate,
+                study_hours_per_week=ar.study_hours_per_week
+            )
             for ar in academic_records
         ],
-        "latest_prediction": {
-            "predicted_gpa": latest_prediction.predicted_gpa,
-            "category": latest_prediction.predicted_performance_category,
-            "confidence": latest_prediction.confidence_score,
-            "risk_level": latest_prediction.risk_level,
-            "recommendation": latest_prediction.recommendation,
-            "date": latest_prediction.prediction_date
-        } if latest_prediction else None
-    }
+        latest_prediction=PredictionSummary(
+            predicted_gpa=latest_prediction.predicted_gpa,
+            category=latest_prediction.predicted_performance_category,
+            confidence=latest_prediction.confidence_score,
+            risk_level=latest_prediction.risk_level,
+            recommendation=latest_prediction.recommendation,
+            date=latest_prediction.prediction_date
+        ) if latest_prediction else None
+    )
 
 
 @router.get("/students/{student_code}/profile")
