@@ -137,7 +137,7 @@ export default function StudentProfile() {
               type="text"
               value={studentCode}
               onChange={(event) => setStudentCode(event.target.value)}
-              placeholder="Enter Student Code (e.g., S2024001)"
+              placeholder="Enter Student Code (e.g., 2026001)"
               className="min-w-[260px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-brand-200 transition focus:border-brand-400 focus:ring-2"
             />
             <Button type="submit" disabled={loading}>Load Profile</Button>
@@ -164,7 +164,7 @@ export default function StudentProfile() {
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="text-3xl font-bold text-slate-900 uppercase tracking-tight">Academic Intervention & Support Report</h1>
-                <p className="text-slate-500 font-medium">Student Performance Analysis | Academic Year 2023-2024</p>
+                <p className="text-slate-500 font-medium">Student Performance Analysis | Academic Year 2025-2026</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold text-slate-900">AI Student Performance Predictor</p>
