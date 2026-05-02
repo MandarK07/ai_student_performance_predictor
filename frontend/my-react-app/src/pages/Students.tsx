@@ -103,16 +103,24 @@ export default function Students() {
     try {
       const students = await fetchStudents({ limit: 500 });
 
-      const withPerformance = await Promise.all(
-        students.map(async (student) => {
-          try {
-            const performance = await fetchStudentPerformance(student.student_code);
-            return { student, performance };
-          } catch {
-            return { student, performance: null };
-          }
-        })
-      );
+      // Process in chunks of 10 to avoid overwhelming the server connection pool and rate limits
+      const chunkSize = 10;
+      const withPerformance = [];
+      
+      for (let i = 0; i < students.length; i += chunkSize) {
+        const chunk = students.slice(i, i + chunkSize);
+        const chunkResults = await Promise.all(
+          chunk.map(async (student) => {
+            try {
+              const performance = await fetchStudentPerformance(student.student_code);
+              return { student, performance };
+            } catch {
+              return { student, performance: null };
+            }
+          })
+        );
+        withPerformance.push(...chunkResults);
+      }
 
       setRows(
         withPerformance.map(({ student, performance }) => buildStudentRow(student, performance))
