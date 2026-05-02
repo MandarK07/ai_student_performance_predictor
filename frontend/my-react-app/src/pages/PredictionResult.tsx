@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { getStudentPredictions } from "../api/predict";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
@@ -11,7 +12,9 @@ import {
   Clock, 
   Target,
   ArrowRightCircle,
-  GraduationCap
+  GraduationCap,
+  BarChart3,
+  ArrowRight
 } from "lucide-react";
 
 type LoadedPrediction = {
@@ -48,6 +51,8 @@ export default function PredictionResult() {
   const [prediction, setPrediction] = useState<LoadedPrediction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const loadPrediction = async (code: string) => {
     if (!code.trim()) {
@@ -57,6 +62,7 @@ export default function PredictionResult() {
 
     setLoading(true);
     setError(null);
+    setHasSearched(true);
     try {
       const payload = await getStudentPredictions(code.trim());
       if (!payload.latest_prediction) {
@@ -88,8 +94,10 @@ export default function PredictionResult() {
     const savedCode = localStorage.getItem("latest_prediction_student_code");
     if (savedCode) {
       setStudentCode(savedCode);
+      setHasSearched(true);
       void loadPrediction(savedCode);
     }
+    setHasInitialized(true);
   }, []);
 
   const score = useMemo(() => {
@@ -98,6 +106,9 @@ export default function PredictionResult() {
     }
     return Math.max(0, Math.min(100, prediction.predictedGpa * 10));
   }, [prediction]);
+
+  // Show empty state when no prediction has been searched yet
+  const showEmptyState = hasInitialized && !hasSearched && !prediction && !loading;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -133,6 +144,31 @@ export default function PredictionResult() {
       {error && (
         <Card className="border-l-4 border-l-red-500">
           <p className="text-sm text-red-700">{error}</p>
+        </Card>
+      )}
+
+      {/* Friendly empty state — no prediction performed yet */}
+      {showEmptyState && (
+        <Card className="py-12 text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-brand-50 to-indigo-50 ring-1 ring-brand-100">
+            <BarChart3 className="h-10 w-10 text-brand-500" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">No Predictions Yet</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+            You haven't performed any predictions yet. Run a prediction first to see detailed results,
+            risk analysis, and a personalized action plan for the student.
+          </p>
+          <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Button asChild className="group">
+              <Link to="/predict">
+                Go to Predictor
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+          </div>
+          <p className="mt-4 text-xs text-slate-400">
+            Or enter a student code above if you already know it.
+          </p>
         </Card>
       )}
 

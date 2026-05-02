@@ -1,5 +1,7 @@
-import { ArrowRight, BarChart3, BookOpen, Brain, Calendar, Database, GraduationCap, TrendingUp, Users, Zap } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { ArrowRight, BarChart3, BookOpen, Brain, Calendar, Database, GraduationCap, Loader2, TrendingUp, Users, Zap } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 // import logo from '../assets/logo.png'
@@ -14,7 +16,35 @@ const SectionSubtitle = ({ children }: { children: React.ReactNode }) => (
 );
 
 // Hero Section Component
-const HeroSection = () => (
+const HeroSection = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [demoLoading, setDemoLoading] = useState<'teacher' | 'student' | null>(null);
+  const [demoError, setDemoError] = useState<string | null>(null);
+
+  const handleDemoLogin = async (role: 'teacher' | 'student') => {
+    setDemoLoading(role);
+    setDemoError(null);
+    try {
+      const credentials = {
+        teacher: { username: 'teacher_demo', password: 'teacher123' },
+        student: { username: 'student_demo', password: 'student123' },
+      };
+      const { username, password } = credentials[role];
+      const me = await login(username, password, role);
+
+      const target = role === 'teacher'
+        ? '/teacher-dashboard'
+        : me.student_id ? '/student-dashboard' : '/enrollment-pending';
+      navigate(target, { replace: true });
+    } catch {
+      setDemoError('Demo login failed. Please try again.');
+    } finally {
+      setDemoLoading(null);
+    }
+  };
+
+  return (
   <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 py-20">
     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-800/30 to-transparent"></div>
     <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,6 +106,44 @@ const HeroSection = () => (
             >
               See How It Works
             </Button>
+          </div>
+
+          {/* Demo Login Buttons */}
+          <div className="pt-2">
+            <p className="mb-3 text-sm font-medium text-blue-200/80">
+              Try the platform instantly with a demo account:
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                id="demo-login-teacher"
+                disabled={demoLoading !== null}
+                onClick={() => handleDemoLogin('teacher')}
+                className="bg-emerald-500/90 text-white hover:bg-emerald-500 hover:-translate-y-0.5 transition-all duration-200 shadow-lg shadow-emerald-900/30 backdrop-blur-sm border border-emerald-400/30"
+              >
+                {demoLoading === 'teacher' ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <BookOpen className="mr-2 h-4 w-4" />
+                )}
+                Login as Demo Teacher
+              </Button>
+              <Button
+                id="demo-login-student"
+                disabled={demoLoading !== null}
+                onClick={() => handleDemoLogin('student')}
+                className="bg-rose-500/90 text-white hover:bg-rose-500 hover:-translate-y-0.5 transition-all duration-200 shadow-lg shadow-rose-900/30 backdrop-blur-sm border border-rose-400/30"
+              >
+                {demoLoading === 'student' ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <GraduationCap className="mr-2 h-4 w-4" />
+                )}
+                Login as Demo Student
+              </Button>
+            </div>
+            {demoError && (
+              <p className="mt-2 text-sm text-red-300">{demoError}</p>
+            )}
           </div>
         </div>
 
@@ -145,7 +213,8 @@ const HeroSection = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 // Problem Section Component
 const ProblemSection = () => {
