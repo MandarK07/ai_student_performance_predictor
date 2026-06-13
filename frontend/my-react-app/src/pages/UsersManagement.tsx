@@ -75,7 +75,7 @@ export default function UsersManagement() {
     setEditError(null);
     try {
       const res = await apiFetch(`/admin/users/${editingUser.user_id}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: editRole }),
       });
@@ -97,7 +97,7 @@ export default function UsersManagement() {
   const toggleActive = async (u: UserSummary) => {
     try {
       const res = await apiFetch(`/admin/users/${u.user_id}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: !u.is_active }),
       });

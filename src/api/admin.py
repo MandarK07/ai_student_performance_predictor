@@ -92,6 +92,7 @@ class UserUpdateRequest(BaseModel):
     is_active: Optional[bool] = None
 
 @router.patch("/admin/users/{user_id}", response_model=UserSummaryResponse)
+@router.put("/admin/users/{user_id}", response_model=UserSummaryResponse)
 async def update_user(
     user_id: str,
     payload: UserUpdateRequest,
