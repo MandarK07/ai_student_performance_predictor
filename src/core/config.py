@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = "password"
     
     # CORS
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "http://localhost:5173,https://ai-student-performance-predictor.vercel.app"
     
     # Paths & Uploads
     MODEL_PATH: str = "models/random_forest.joblib"
