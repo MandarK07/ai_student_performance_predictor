@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all exception handler to log errors and return a JSON response."""
     logger.error(f"Unhandled error at {request.method} {request.url}: {exc}", exc_info=True)
-    return JSONResponse(
+    response = JSONResponse(
         status_code=500,
         content={
             "detail": "Internal Server Error",
@@ -84,6 +84,11 @@ async def global_exception_handler(request: Request, exc: Exception):
             "path": request.url.path
         }
     )
+    origin = request.headers.get("origin")
+    if origin in FRONTEND_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 
 @app.get("/", response_class=HTMLResponse)
