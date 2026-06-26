@@ -20,6 +20,15 @@ from src.auth.bootstrap import ensure_admin_user, ensure_demo_users
 from src.database.connection import test_connection, init_db
 
 FRONTEND_ORIGINS = settings.cors_origins
+# Ensure essential origins are always allowed
+essential_origins = [
+    "https://ai-student-performance-predictor.vercel.app",
+    "http://localhost:5173"
+]
+for origin in essential_origins:
+    if origin not in FRONTEND_ORIGINS:
+        FRONTEND_ORIGINS.append(origin)
+
 PRIMARY_FRONTEND_URL = FRONTEND_ORIGINS[0] if FRONTEND_ORIGINS else "http://localhost:5173"
 
 
