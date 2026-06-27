@@ -40,11 +40,17 @@ export default function Analytics() {
 
         const gpaCounts = { "0-1.0": 0, "1.0-2.0": 0, "2.0-3.0": 0, "3.0-4.0": 0 };
         
-        const performanceByStudent = await Promise.all(
-          students.map(async (student) => {
-            try { return await fetchStudentPerformance(student.student_code); } catch { return null; }
-          })
-        );
+        const performanceByStudent = [];
+        const CHUNK_SIZE = 5;
+        for (let i = 0; i < students.length; i += CHUNK_SIZE) {
+          const chunk = students.slice(i, i + CHUNK_SIZE);
+          const chunkResults = await Promise.all(
+            chunk.map(async (student) => {
+              try { return await fetchStudentPerformance(student.student_code); } catch { return null; }
+            })
+          );
+          performanceByStudent.push(...chunkResults);
+        }
         
         performanceByStudent.forEach((item) => {
           const gpa = item?.latest_prediction?.predicted_gpa ?? item?.academic_history?.[0]?.gpa;

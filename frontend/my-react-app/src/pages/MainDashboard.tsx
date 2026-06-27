@@ -44,15 +44,21 @@ export default function MainDashboard() {
       try {
         const [students, atRisk] = await Promise.all([fetchStudents({ limit: 500 }), getAtRiskStudents()]);
 
-        const performanceByStudent = await Promise.all(
-          students.map(async (student) => {
-            try {
-              return await fetchStudentPerformance(student.student_code);
-            } catch {
-              return null;
-            }
-          })
-        );
+        const performanceByStudent = [];
+        const CHUNK_SIZE = 5;
+        for (let i = 0; i < students.length; i += CHUNK_SIZE) {
+          const chunk = students.slice(i, i + CHUNK_SIZE);
+          const chunkResults = await Promise.all(
+            chunk.map(async (student) => {
+              try {
+                return await fetchStudentPerformance(student.student_code);
+              } catch {
+                return null;
+              }
+            })
+          );
+          performanceByStudent.push(...chunkResults);
+        }
 
         if (!active) {
           return;
