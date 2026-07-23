@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, BarChart3, BookOpen, Brain, Calendar, Database, GraduationCap, Loader2, TrendingUp, Users, Zap } from 'lucide-react';
+import { BarChart3, BookOpen, Brain, Calendar, Database, GraduationCap, Loader2, TrendingUp, Users, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
@@ -88,15 +88,6 @@ const HeroSection = () => {
               </p>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row">
-              {/* <Button
-              asChild
-              className="bg-white text-blue-900 hover:bg-blue-50 transition-all duration-300 group"
-            >
-              <Link to="/predict">
-                Request Demo
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button> */}
               <Button
                 variant="outline"
                 className="bg-transparent border-white text-white hover:bg-white/10"
