@@ -45,50 +45,50 @@ const HeroSection = () => {
   };
 
   return (
-  <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 py-20">
-    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-800/30 to-transparent"></div>
-    <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="mb-12 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          {/* <img
+    <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 py-20">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-800/30 to-transparent"></div>
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* <img
             src="/logo.png"
             alt="AI EduPredict logo"
             className="h-12 w-12 rounded-xl shadow-lg ring-2 ring-white/30 bg-white/10 backdrop-blur"
           /> */}
-          <div className="text-2xl font-bold text-white">AI EduPredict</div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            asChild
-            variant="outline"
-            className="bg-transparent border-white/40 text-white hover:-translate-y-0.5 hover:bg-white/10 transition-all duration-200"
-          >
-            <Link to="/login">Sign In</Link>
-          </Button>
-          <Button
-            asChild
-            className="bg-white text-blue-900 hover:-translate-y-0.5 hover:bg-blue-50 transition-all duration-200 shadow-lg shadow-blue-900/20"
-          >
-            <Link to="/register-user">Sign Up</Link>
-          </Button>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
-        {/* Left Content */}
-        <div className="relative z-10 space-y-6">
-          <div className="space-y-4">
-            <div className="inline-block rounded-full bg-blue-500/20 px-4 py-1 text-sm font-medium text-blue-200 backdrop-blur-sm">
-              AI-Powered Analytics
-            </div>
-            <h1 className="text-4xl font-bold text-white md:text-5xl lg:text-6xl">
-              Predict Student Performance Before It's Too Late
-            </h1>
-            <p className="text-xl text-blue-100 md:text-2xl">
-              Our AI identifies at-risk students early, enabling timely interventions that improve academic outcomes.
-            </p>
+            <div className="text-2xl font-bold text-white">AI EduPredict</div>
           </div>
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex items-center gap-3">
             <Button
+              asChild
+              variant="outline"
+              className="bg-transparent border-white/40 text-white hover:-translate-y-0.5 hover:bg-white/10 transition-all duration-200"
+            >
+              <Link to="/login">Sign In</Link>
+            </Button>
+            <Button
+              asChild
+              className="bg-white text-blue-900 hover:-translate-y-0.5 hover:bg-blue-50 transition-all duration-200 shadow-lg shadow-blue-900/20"
+            >
+              <Link to="/register-user">Sign Up</Link>
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+          {/* Left Content */}
+          <div className="relative z-10 space-y-6">
+            <div className="space-y-4">
+              <div className="inline-block rounded-full bg-blue-500/20 px-4 py-1 text-sm font-medium text-blue-200 backdrop-blur-sm">
+                AI-Powered Analytics
+              </div>
+              <h1 className="text-4xl font-bold text-white md:text-5xl lg:text-6xl">
+                Predict Student Performance Before It's Too Late
+              </h1>
+              <p className="text-xl text-blue-100 md:text-2xl">
+                Our AI identifies at-risk students early, enabling timely interventions that improve academic outcomes.
+              </p>
+            </div>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              {/* <Button
               asChild
               className="bg-white text-blue-900 hover:bg-blue-50 transition-all duration-300 group"
             >
@@ -96,123 +96,129 @@ const HeroSection = () => {
                 Request Demo
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-transparent border-white text-white hover:bg-white/10"
-              onClick={() => {
-                document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              See How It Works
-            </Button>
-          </div>
-
-          {/* Demo Login Buttons */}
-          <div className="pt-2">
-            <p className="mb-3 text-sm font-medium text-blue-200/80">
-              Try the platform instantly with a demo account:
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            </Button> */}
               <Button
-                id="demo-login-teacher"
-                disabled={demoLoading !== null}
-                onClick={() => handleDemoLogin('teacher')}
-                className="bg-emerald-500/90 text-white hover:bg-emerald-500 hover:-translate-y-0.5 transition-all duration-200 shadow-lg shadow-emerald-900/30 backdrop-blur-sm border border-emerald-400/30"
+                variant="outline"
+                className="bg-transparent border-white text-white hover:bg-white/10"
+                onClick={() => {
+                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
-                {demoLoading === 'teacher' ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <BookOpen className="mr-2 h-4 w-4" />
-                )}
-                Login as Demo Teacher
-              </Button>
-              <Button
-                id="demo-login-student"
-                disabled={demoLoading !== null}
-                onClick={() => handleDemoLogin('student')}
-                className="bg-rose-500/90 text-white hover:bg-rose-500 hover:-translate-y-0.5 transition-all duration-200 shadow-lg shadow-rose-900/30 backdrop-blur-sm border border-rose-400/30"
-              >
-                {demoLoading === 'student' ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <GraduationCap className="mr-2 h-4 w-4" />
-                )}
-                Login as Demo Student
+                See How It Works
               </Button>
             </div>
-            {demoError && (
-              <p className="mt-2 text-sm text-red-300">{demoError}</p>
-            )}
+
+            {/* Demo Login Buttons */}
+            <div className="pt-2">
+              <p className="mb-3 text-sm font-medium text-blue-200/80">
+                Try the platform instantly with a demo account:
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  id="demo-login-teacher"
+                  disabled={demoLoading !== null}
+                  onClick={() => handleDemoLogin('teacher')}
+                  className="bg-emerald-500/90 text-white hover:bg-emerald-500 hover:-translate-y-0.5 transition-all duration-200 shadow-lg shadow-emerald-900/30 backdrop-blur-sm border border-emerald-400/30"
+                >
+                  {demoLoading === 'teacher' ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <BookOpen className="mr-2 h-4 w-4" />
+                  )}
+                  Login as Demo Teacher
+                </Button>
+                <Button
+                  id="demo-login-student"
+                  disabled={demoLoading !== null}
+                  onClick={() => handleDemoLogin('student')}
+                  className="bg-rose-500/90 text-white hover:bg-rose-500 hover:-translate-y-0.5 transition-all duration-200 shadow-lg shadow-rose-900/30 backdrop-blur-sm border border-rose-400/30"
+                >
+                  {demoLoading === 'student' ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                  )}
+                  Login as Demo Student
+                </Button>
+              </div>
+              {demoLoading && (
+                <p className="mt-3 text-xs font-medium text-blue-200/90 flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-300 shrink-0" />
+                  <span>Starting the server... This may take up to 50 seconds on the first request.</span>
+                </p>
+              )}
+              {demoError && (
+                <p className="mt-2 text-sm text-red-300">{demoError}</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Right Dashboard Preview */}
-        <div className="relative z-10 flex justify-center">
-          <div className="relative rounded-2xl bg-white/10 backdrop-blur-md p-6 border border-white/20 shadow-2xl w-full max-w-lg">
-            <div className="rounded-xl bg-white p-4 shadow-inner">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-800">Student Performance Overview</h3>
-                <div className="flex gap-2">
-                  <div className="h-3 w-3 rounded-full bg-green-400"></div>
-                  <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
-                  <div className="h-3 w-3 rounded-full bg-red-400"></div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                      <GraduationCap className="h-4 w-4 text-green-600" />
-                    </div>
-                    <span className="font-medium text-slate-700">Sarah Johnson</span>
+          {/* Right Dashboard Preview */}
+          <div className="relative z-10 flex justify-center">
+            <div className="relative rounded-2xl bg-white/10 backdrop-blur-md p-6 border border-white/20 shadow-2xl w-full max-w-lg">
+              <div className="rounded-xl bg-white p-4 shadow-inner">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-800">Student Performance Overview</h3>
+                  <div className="flex gap-2">
+                    <div className="h-3 w-3 rounded-full bg-green-400"></div>
+                    <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
+                    <div className="h-3 w-3 rounded-full bg-red-400"></div>
                   </div>
-                  <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-                    Low Risk
-                  </span>
                 </div>
 
-                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                      <GraduationCap className="h-4 w-4 text-yellow-600" />
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <GraduationCap className="h-4 w-4 text-green-600" />
+                      </div>
+                      <span className="font-medium text-slate-700">Sarah Johnson</span>
                     </div>
-                    <span className="font-medium text-slate-700">Michael Chen</span>
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                      Low Risk
+                    </span>
                   </div>
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800">
-                    Medium Risk
-                  </span>
-                </div>
 
-                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                      <GraduationCap className="h-4 w-4 text-red-600" />
+                  <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <GraduationCap className="h-4 w-4 text-yellow-600" />
+                      </div>
+                      <span className="font-medium text-slate-700">Michael Chen</span>
                     </div>
-                    <span className="font-medium text-slate-700">Emma Rodriguez</span>
+                    <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800">
+                      Medium Risk
+                    </span>
                   </div>
-                  <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                    High Risk
-                  </span>
-                </div>
-              </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <div className="flex justify-between text-sm text-slate-600 mb-2">
-                  <span>Performance Trends</span>
-                  <span>+12%</span>
+                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                        <GraduationCap className="h-4 w-4 text-red-600" />
+                      </div>
+                      <span className="font-medium text-slate-700">Emma Rodriguez</span>
+                    </div>
+                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                      High Risk
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+
+                <div className="mt-4 pt-4 border-t border-slate-200">
+                  <div className="flex justify-between text-sm text-slate-600 mb-2">
+                    <span>Performance Trends</span>
+                    <span>+12%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
   );
 };
 

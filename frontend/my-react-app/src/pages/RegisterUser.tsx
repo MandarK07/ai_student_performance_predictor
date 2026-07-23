@@ -298,6 +298,12 @@ export default function RegisterUser() {
                       </>
                     )}
                   </Button>
+                  {isSubmitting && (
+                    <p className="mt-2 text-xs font-medium text-slate-500 text-center flex items-center justify-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400 shrink-0" />
+                      Starting the server... This may take up to 50 seconds on the first request.
+                    </p>
+                  )}
 
                   <div className="text-center pt-2">
                     <p className="text-sm text-slate-500">
