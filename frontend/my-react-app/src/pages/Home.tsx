@@ -351,12 +351,12 @@ const HeroVisual = () => (
 
         <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] p-4 text-white shadow-lg shadow-blue-900/20">
           <span className="text-xs font-semibold text-blue-100">Prediction Confidence</span>
-          <p className="mt-2 text-3xl font-extrabold">94.7%</p>
+          <p className="mt-2 text-3xl font-extrabold">85.7%</p>
           <p className="mt-1 text-[11px] leading-snug text-blue-200">
-            Model accuracy on 10,000+ student records
+            Model accuracy on 10,00+ student records
           </p>
           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/20">
-            <div className="h-full w-[94.7%] rounded-full bg-gradient-to-r from-[#10B981] to-[#14B8A6]" />
+            <div className="h-full w-[85.7%] rounded-full bg-gradient-to-r from-[#10B981] to-[#14B8A6]" />
           </div>
         </div>
       </div>
@@ -383,7 +383,7 @@ const HeroVisual = () => (
         </div>
         <div>
           <p className="text-xs font-bold text-slate-900">Active Students</p>
-          <p className="text-[11px] font-semibold text-slate-500">2,847 this term</p>
+          <p className="text-[11px] font-semibold text-slate-500">847 this term</p>
         </div>
       </div>
     </div>
@@ -402,13 +402,13 @@ const HeroVisual = () => (
 const STATS = [
   {
     icon: <Users className="h-6 w-6" />,
-    value: "10,000+",
+    value: "1,000+",
     label: "Students Analyzed",
     color: "bg-blue-50 text-[#2563EB]",
   },
   {
     icon: <Radar className="h-6 w-6" />,
-    value: "95%",
+    value: "85.7%",
     label: "Prediction Accuracy",
     color: "bg-emerald-50 text-[#10B981]",
   },
@@ -458,7 +458,7 @@ const FEATURES = [
     icon: <Brain className="h-6 w-6" />,
     title: "AI Risk Prediction",
     description:
-      "Machine learning models identify at-risk students with 95% accuracy, enabling proactive intervention before performance declines.",
+      "Machine learning models identify at-risk students with 85.7% accuracy, enabling proactive intervention before performance declines.",
     color: "bg-blue-50 text-[#2563EB]",
   },
   {

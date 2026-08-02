@@ -16,8 +16,10 @@ from src.api.enrollments import router as enrollments_router
 from src.api.predict import router as predict_router
 from src.api.students import router as students_router
 from src.api.upload import router as upload_router
-from src.auth.bootstrap import ensure_admin_user, ensure_demo_users
+from src.auth.bootstrap import ensure_admin_user, decommission_legacy_demo_users_on_startup
 from src.database.connection import test_connection, init_db
+from src.database.demo import ensure_demo_ready
+from src.api.middleware import DemoScopeMiddleware, DemoRateLimitMiddleware
 
 FRONTEND_ORIGINS = settings.cors_origins
 # Ensure essential origins are always allowed
@@ -41,7 +43,8 @@ async def lifespan(app: FastAPI):
         print("Database connection successful")
         init_db()
         ensure_admin_user()
-        ensure_demo_users()
+        decommission_legacy_demo_users_on_startup()
+        ensure_demo_ready()
     else:
         print("Database connection failed - some features may not work")
 
@@ -59,6 +62,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(DemoScopeMiddleware)
+app.add_middleware(DemoRateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,

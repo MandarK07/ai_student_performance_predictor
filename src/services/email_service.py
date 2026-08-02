@@ -17,7 +17,12 @@ async def send_intervention_email(student_email: str, student_name: str, interve
     """
     Sends an email notification to the student about a new intervention.
     If SMTP credentials are not configured, it logs the message to console.
+    Demo users (student_demo@example.com) never send real emails.
     """
+    from src.database.demo import is_demo_username
+    if student_email and is_demo_username(student_email.split("@")[0]):
+        print(f"DEBUG [Email MOCK]: Demo user, suppressing email: To: {student_email}")
+        return True
     if not SMTP_USERNAME or not SMTP_PASSWORD:
         print(f"DEBUG [Email MOCK]: To: {student_email}")
         print(f"Subject: Support Action Initiated: {intervention_type}")

@@ -252,6 +252,7 @@ class User(Base):
     full_name = Column(String(200), nullable=False)
     student_id = Column(UUID(as_uuid=True), ForeignKey('students.student_id'))
     is_active = Column(Boolean, default=True)
+    is_demo = Column(Boolean, default=False, nullable=False, server_default="false")
     last_login = Column(DateTime)
     failed_login_attempts = Column(Integer, default=0, nullable=False)
     locked_until = Column(DateTime)

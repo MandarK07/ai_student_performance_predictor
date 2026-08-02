@@ -9,6 +9,7 @@ export type AuthUser = {
   is_active: boolean;
   last_login: string | null;
   student_id: string | null;
+  is_demo: boolean;
 };
 
 export type RegisterUserRequest = {
