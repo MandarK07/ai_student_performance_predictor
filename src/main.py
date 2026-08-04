@@ -25,7 +25,8 @@ FRONTEND_ORIGINS = settings.cors_origins
 # Ensure essential origins are always allowed
 essential_origins = [
     "https://ai-student-performance-predictor.vercel.app",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    
 ]
 for origin in essential_origins:
     if origin not in FRONTEND_ORIGINS:
@@ -67,6 +68,7 @@ app.add_middleware(DemoRateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,
+    allow_origin_regex=r"https://ai-student-performance-predictor(-git-.*)?\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
