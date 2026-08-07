@@ -16,20 +16,36 @@ from src.api.enrollments import router as enrollments_router
 from src.api.predict import router as predict_router
 from src.api.students import router as students_router
 from src.api.upload import router as upload_router
-from src.auth.bootstrap import ensure_admin_user, ensure_demo_users
+from src.auth.bootstrap import ensure_admin_user, decommission_legacy_demo_users_on_startup
 from src.database.connection import test_connection, init_db
+from src.database.demo import ensure_demo_ready
+from src.api.middleware import DemoScopeMiddleware, DemoRateLimitMiddleware
+
+import re
 
 FRONTEND_ORIGINS = settings.cors_origins
 # Ensure essential origins are always allowed
 essential_origins = [
     "https://ai-student-performance-predictor.vercel.app",
-    "http://localhost:5173"
+    "http://localhost:5173",
 ]
 for origin in essential_origins:
     if origin not in FRONTEND_ORIGINS:
         FRONTEND_ORIGINS.append(origin)
 
 PRIMARY_FRONTEND_URL = FRONTEND_ORIGINS[0] if FRONTEND_ORIGINS else "http://localhost:5173"
+
+VERCEL_ORIGIN_REGEX = re.compile(r"^https://.*\.vercel\.app$")
+
+
+def is_origin_allowed(origin: str | None) -> bool:
+    if not origin:
+        return False
+    if origin in FRONTEND_ORIGINS:
+        return True
+    if VERCEL_ORIGIN_REGEX.match(origin):
+        return True
+    return False
 
 
 @asynccontextmanager
@@ -41,7 +57,8 @@ async def lifespan(app: FastAPI):
         print("Database connection successful")
         init_db()
         ensure_admin_user()
-        ensure_demo_users()
+        decommission_legacy_demo_users_on_startup()
+        ensure_demo_ready()
     else:
         print("Database connection failed - some features may not work")
 
@@ -59,9 +76,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(DemoScopeMiddleware)
+app.add_middleware(DemoRateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -94,7 +114,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
     origin = request.headers.get("origin")
-    if origin in FRONTEND_ORIGINS:
+    if is_origin_allowed(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
     return response

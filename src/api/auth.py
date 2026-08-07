@@ -20,7 +20,9 @@ from src.auth.security import (
     verify_password,
 )
 from src.database import crud
-from src.database.connection import get_db
+from src.database.connection import get_db, create_tenant_session
+from src.database.demo import is_demo_username
+from src.core.config import settings
 
 
 router = APIRouter(prefix="/auth")
@@ -29,7 +31,7 @@ router = APIRouter(prefix="/auth")
 class LoginRequest(BaseModel):
     username_or_email: str = Field(..., min_length=3, max_length=255)
     password: str = Field(..., min_length=1, max_length=255)
-    role: str = Field(..., pattern="^(admin|teacher|counselor|student|parent)$")
+    role: str = Field("", pattern="^(admin|teacher|counselor|student|parent)$")
 
 
 class RegisterRequest(BaseModel):
@@ -73,6 +75,7 @@ class UserResponse(BaseModel):
     is_active: bool
     last_login: Optional[datetime]
     student_id: Optional[uuid.UUID] = None
+    is_demo: bool = False
 
 
 class RegisterResponse(BaseModel):
@@ -90,7 +93,15 @@ def _utcnow() -> datetime:
 
 
 def _extract_request_context(request: Request):
-    ip_address = request.client.host if request.client else None
+    import ipaddress
+    raw_ip = request.client.host if request.client else None
+    ip_address = None
+    if raw_ip:
+        try:
+            ipaddress.ip_address(raw_ip)
+            ip_address = raw_ip
+        except ValueError:
+            ip_address = None
     user_agent = request.headers.get("user-agent")
     return ip_address, user_agent
 
@@ -127,6 +138,8 @@ async def register_user(
     Register a new user account.
     Admin-only endpoint.
     """
+    if is_demo_username(payload.username):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Reserved demo username — cannot be registered")
     existing_by_username = crud.get_user_by_username(db, payload.username.strip())
     if existing_by_username:
         _log_auth_event(
@@ -187,6 +200,8 @@ async def signup_user(payload: SignupRequest, request: Request, db: Session = De
     Public self-signup endpoint.
     Security constraint: self-signup users are always created with `student` role.
     """
+    if is_demo_username(payload.username):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Reserved demo username — cannot be registered")
     existing_by_username = crud.get_user_by_username(db, payload.username.strip())
     if existing_by_username:
         _log_auth_event(
@@ -245,6 +260,10 @@ async def login(payload: LoginRequest, request: Request, db: Session = Depends(g
     Authenticate a user and issue access/refresh tokens.
     """
     identifier = payload.username_or_email.strip()
+    is_demo = is_demo_username(identifier)
+    if is_demo:
+        db.close()
+        db = create_tenant_session(settings.DEMO_SCHEMA)
     user = crud.get_user_by_email(db, identifier) if "@" in identifier else crud.get_user_by_username(db, identifier)
     if not user:
         _log_auth_event(db, "auth.login.failed", request, details={"reason": "user_not_found", "identifier": identifier})
@@ -254,18 +273,18 @@ async def login(payload: LoginRequest, request: Request, db: Session = Depends(g
         _log_auth_event(db, "auth.login.failed", request, user_id=user.user_id, details={"reason": "inactive"})
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
 
-    # Strict Role Validation
-    if user.role != payload.role:
+    # The role field is a UI convenience (tab selection / redirect hint), not a
+    # security boundary. A strict mismatch check caused confusing 401s whenever
+    # the selected tab did not match the account role (e.g. the default Student
+    # tab with admin credentials). Authenticate purely on username + password;
+    # the client redirects based on the real role returned by /auth/me.
+    if payload.role and user.role != payload.role:
         _log_auth_event(
-            db, 
-            "auth.login.failed", 
-            request, 
-            user_id=user.user_id, 
-            details={"reason": "role_mismatch", "selected": payload.role, "actual": user.role}
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Invalid role selection for this account"
+            db,
+            "auth.login.role_mismatch",
+            request,
+            user_id=user.user_id,
+            details={"selected": payload.role, "actual": user.role},
         )
 
     if user.locked_until and user.locked_until.replace(tzinfo=timezone.utc) > _utcnow():
@@ -291,7 +310,7 @@ async def login(payload: LoginRequest, request: Request, db: Session = Depends(g
 
     session_id = uuid.uuid4()
     token_family = uuid.uuid4()
-    refresh_token = create_refresh_token(str(user.user_id), session_id=session_id, token_family=token_family)
+    refresh_token = create_refresh_token(str(user.user_id), session_id=session_id, token_family=token_family, is_demo=is_demo)
     refresh_hash = hash_refresh_token(refresh_token)
     ip_address, user_agent = _extract_request_context(request)
 
@@ -309,7 +328,7 @@ async def login(payload: LoginRequest, request: Request, db: Session = Depends(g
         },
     )
 
-    access_token = create_access_token(str(user.user_id), user.username, user.role or "student")
+    access_token = create_access_token(str(user.user_id), user.username, user.role or "student", is_demo=is_demo)
     _log_auth_event(db, "auth.login.success", request, user_id=user.user_id, details={"username": user.username})
 
     return AuthTokensResponse(
@@ -329,6 +348,7 @@ async def refresh_tokens(payload: RefreshRequest, request: Request, db: Session 
         session_id = uuid.UUID(token_payload["sid"])
         user_id = uuid.UUID(token_payload["sub"])
         token_family = uuid.UUID(token_payload["fam"])
+        is_demo = bool(token_payload.get("is_demo", False))
     except Exception as exc:
         _log_auth_event(db, "auth.refresh.failed", request, details={"reason": "invalid_refresh_token"})
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token") from exc
@@ -355,7 +375,7 @@ async def refresh_tokens(payload: RefreshRequest, request: Request, db: Session 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not active")
 
     new_session_id = uuid.uuid4()
-    new_refresh_token = create_refresh_token(str(user.user_id), session_id=new_session_id, token_family=token_family)
+    new_refresh_token = create_refresh_token(str(user.user_id), session_id=new_session_id, token_family=token_family, is_demo=is_demo)
     ip_address, user_agent = _extract_request_context(request)
 
     new_session = crud.rotate_auth_session(
@@ -377,7 +397,7 @@ async def refresh_tokens(payload: RefreshRequest, request: Request, db: Session 
         _log_auth_event(db, "auth.refresh.failed", request, user_id=user.user_id, details={"reason": "rotation_failed"})
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session rotation failed")
 
-    access_token = create_access_token(str(user.user_id), user.username, user.role or "student")
+    access_token = create_access_token(str(user.user_id), user.username, user.role or "student", is_demo=is_demo)
     _log_auth_event(db, "auth.refresh.success", request, user_id=user.user_id, details={"session_id": str(new_session.session_id)})
     return AuthTokensResponse(
         access_token=access_token,
@@ -447,4 +467,5 @@ async def me(current_user=Depends(get_current_user)):
         is_active=current_user.is_active,
         last_login=current_user.last_login,
         student_id=current_user.student_id,
+        is_demo=bool(getattr(current_user, "is_demo", False)),
     )

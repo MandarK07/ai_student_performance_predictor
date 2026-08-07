@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "admin123"
     ADMIN_FULL_NAME: str = "System Administrator"
 
+    # Demo Sandbox (isolated schema + storage)
+    DEMO_SCHEMA: str = "demo"
+    DEMO_UPLOAD_DIR: str = "data/uploads/demo/"
+    DEMO_RESET_ON_STARTUP: bool = True
+    DEMO_RESET_INTERVAL_MINUTES: int = 60
+    DEMO_RATE_LIMIT_PER_MINUTE: int = 60
+    DEMO_RESET_MARKER: str = "data/uploads/demo/.demo_last_reset"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

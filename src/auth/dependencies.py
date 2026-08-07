@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from src.auth.security import decode_token
 from src.database.connection import get_db
 from src.database import crud
+from src.database.demo import request_is_demo
 from src.database.models import Student
 
 
@@ -136,6 +137,12 @@ def _resolve_student_for_user(db: Session, current_user) -> Student:
             detail="STUDENT_NOT_LINKED"
         )
     return student
+
+
+def require_non_demo(demo_scope: bool = Depends(request_is_demo)):
+    if demo_scope:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This action is not available in the demo environment")
+    return True
 
 
 def require_self_or_roles(*allowed_roles: str) -> Callable:

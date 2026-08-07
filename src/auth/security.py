@@ -52,22 +52,24 @@ def _encode_token(payload: Dict[str, Any], expires_delta: timedelta) -> str:
     return jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def create_access_token(user_id: str, username: str, role: str) -> str:
+def create_access_token(user_id: str, username: str, role: str, is_demo: bool = False) -> str:
     payload = {
         "sub": user_id,
         "username": username,
         "role": role,
         "token_type": "access",
+        "is_demo": is_demo,
     }
     return _encode_token(payload, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
 
 
-def create_refresh_token(user_id: str, session_id: uuid.UUID, token_family: uuid.UUID) -> str:
+def create_refresh_token(user_id: str, session_id: uuid.UUID, token_family: uuid.UUID, is_demo: bool = False) -> str:
     payload = {
         "sub": user_id,
         "sid": str(session_id),
         "fam": str(token_family),
         "token_type": "refresh",
+        "is_demo": is_demo,
     }
     return _encode_token(payload, timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
 

@@ -1,561 +1,539 @@
 # AI Student Performance Predictor
 
-AI Student Performance Predictor is a full-stack academic analytics platform that helps educators identify students who may be at risk of poor academic performance. The project combines a React dashboard, a FastAPI backend, a PostgreSQL database, and a scikit-learn machine learning pipeline for single-student and batch prediction workflows.
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-19.0-61DAFB.svg?style=flat&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6.svg?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-7.1-646CFF.svg?style=flat&logo=vite)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC.svg?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1.svg?style=flat&logo=postgresql)](https://www.postgresql.org/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3+-F7931E.svg?style=flat&logo=scikit-learn)](https://scikit-learn.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## What the project does
+An enterprise-grade, full-stack academic analytics platform designed to predict student performance, detect early academic risk, and enable timely educational interventions. 
 
-- Predicts student performance from academic and behavioral signals such as attendance, study hours, GPA history, assignment scores, exam scores, participation, and late submissions
-- Supports single prediction and CSV-based batch prediction
-- Stores students, predictions, interventions, sessions, and audit logs in PostgreSQL
-- Provides role-based authentication for admins, teachers, counselors, students, and parents
-- Shows at-risk students, student profiles, and prediction history in the frontend dashboard
+The platform pairs a responsive **React 19 + TypeScript** frontend with a **FastAPI** REST backend, a **PostgreSQL** database (featuring isolated demo sandboxing), and a **scikit-learn** Machine Learning pipeline for single-student and bulk batch predictions.
 
-## Current implementation status
+---
 
-This README reflects the current codebase.
+## 🌟 Key Features
 
-- Backend: FastAPI, SQLAlchemy, PostgreSQL, pandas, scikit-learn, joblib
-- Frontend: React, TypeScript, Vite, Tailwind CSS, React Router, React Hook Form
-- ML model currently used for inference: `RandomForestClassifier`
-- Training script compares `LogisticRegression` and `RandomForestClassifier`, then saves the best model artifact
+### 🤖 Machine Learning & Risk Analytics
+- **Early Risk Forecasting**: Predicts academic outcomes (GPA range, Risk Level, Confidence Score) using random forest classification models trained on academic and behavioral signals.
+- **Behavioral Signal Processing**: Analyzes attendance rates, study hours, GPA history, assignment scores, exam averages, class participation, and late submission metrics.
+- **Batch CSV Processing**: Upload CSV datasets for bulk prediction with error validation and batch history tracking.
+- **Actionable Interventions**: Generates automated recommendations and tracks counselor/teacher intervention workflows for at-risk students.
 
-Notes:
+### 🛡️ Isolated Demo Sandbox
+- **Dedicated PostgreSQL Schema**: Demo accounts (`teacher_demo`, `student_demo`) operate in a completely isolated `demo` database schema, preventing any modification or leakage of production data.
+- **Automatic Background Reseeding**: Periodic automated schema resets (`DEMO_RESET_INTERVAL_MINUTES=60`) maintain a clean sandbox environment.
+- **Rate Limiting & Safety**: Demo-specific rate limiting (`DemoRateLimitMiddleware`) and non-demo write guards (`require_non_demo`) protect the system against abuse.
 
-- The current inference pipeline uses `models/random_forest.joblib`
-- The current training script uses `data/processed/students_processed.csv`
-- `GET /api/upload-history` and `GET /api/stats` are placeholder endpoints
-- The backend exposes student CRUD APIs, but the frontend edit/delete actions are not fully wired yet
+### 🔒 Enterprise Security & Governance
+- **Role-Based Access Control (RBAC)**: Support for `admin`, `teacher`, `counselor`, `student`, and `parent` roles with strict route & resource authorization.
+- **Dual-Token Authentication**: JWT Access Tokens + Rotating Refresh Tokens with persistent session tracking in PostgreSQL (`auth_sessions`).
+- **Audit Logging**: Comprehensive activity tracking (`audit_log`) recording IP addresses, endpoint calls, state changes (old/new values), and permission checks.
+- **Account Lockout Protection**: Automatic account locks after repeated failed login attempts (`MAX_FAILED_LOGIN_ATTEMPTS=5`).
 
-## Tech stack
+### 🎓 Student Onboarding & Invites
+- **Invite Token Workflow**: Secure, token-based enrollment invitation links generated by admins/teachers for student onboarding.
+- **Account Linking**: Self-service student linking request system allowing students to request account linkage to academic records with admin review/approval.
+- **Guardian Integration**: Parent/guardian contact tracking with primary contact flags and direct communication options.
 
-### Backend
+### 🎨 Modern Frontend Experience
+- **Interactive Landing Page**: Feature showcase, live ML playground, role-selector demo login, and responsive dark/light aesthetics.
+- **Role-Tailored Dashboards**: Dedicated views for Admins (system analytics, user governance), Teachers (class metrics, CSV bulk upload), and Students (personal progress, risk indicators).
+- **Cold-Start & Connection Management**: UX notices for cloud backend spin-ups (Render free tier) and frontend request batching to prevent DB connection pool (`QueuePool`) exhaustion.
 
-- Python
-- FastAPI
-- SQLAlchemy
-- Pydantic
-- Uvicorn
-- Passlib + bcrypt
-- python-jose
+---
 
-### Frontend
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router
-- React Hook Form
-- Radix UI primitives
-
-### Database
-
-- PostgreSQL
-
-### Machine learning and data
-
-- pandas
-- scikit-learn
-- joblib
-
-## High-level architecture
+## 🏗️ High-Level Architecture
 
 ```text
-React frontend
-    ->
-API wrapper with JWT access token / refresh token handling
-    ->
-FastAPI routers
-    ->
-Pydantic validation + role-based authorization
-    ->
-SQLAlchemy database session
-    ->
-preprocess_data()
-    ->
-saved ML model (Random Forest)
-    ->
-prediction + intervention persistence in PostgreSQL
-    ->
-JSON response back to frontend
+                                +---------------------------------------+
+                                |          React 19 + Vite SPA          |
+                                |     (Tailwind CSS, Framer Motion)     |
+                                +---------------------------------------+
+                                                    |
+                                             HTTPS / JSON API
+                                                    |
+                                                    v
++---------------------------------------------------------------------------------------------------+
+|                                          FastAPI Backend                                          |
+|                                                                                                   |
+|  +---------------------------+   +-------------------------------+   +-------------------------+  |
+|  |   DemoScopeMiddleware     |   |   DemoRateLimitMiddleware     |   |    CORSMiddleware       |  |
+|  +---------------------------+   +-------------------------------+   +-------------------------+  |
+|                                                    |                                              |
+|  +---------------------------------------------------------------------------------------------+  |
+|  |                              Routers (Auth, Students, Predict, etc.)                          |  |
+|  +---------------------------------------------------------------------------------------------+  |
+|                                                    |                                              |
+|             +--------------------------------------+-----------------------------------+          |
+|             | (Production Scope)                                                       | (Demo)   |
+|             v                                                                          v          |
+|   +-------------------+    +--------------------+    +--------------------+    +---------------+  |
+|   |  SQLAlchemy ORM   |    |  Joblib ML Engine  |    |  SMTP Email Svc    |    |  Demo Schema  |  |
+|   |  (public schema)  |    |  (RandomForest)    |    |  (Invites/Alerts)  |    |  (demo schema)|  |
+|   +-------------------+    +--------------------+    +--------------------+    +---------------+  |
++---------------------------------------------------------------------------------------------------+
+                                                    |
+                                                    v
+                                +---------------------------------------+
+                                |          PostgreSQL Database          |
+                                |       (Neon / Local PostgreSQL)       |
+                                +---------------------------------------+
 ```
 
-## Core modules
+---
 
-### Backend API modules
+## 🧰 Tech Stack
 
-- `src/api/auth.py`
-  - login, signup, register, refresh, logout, logout-all, current-user profile
-- `src/api/students.py`
-  - student create/read/update/delete, search, performance view, profile view
-- `src/api/predict.py`
-  - single-student prediction, prediction history, at-risk student list
-- `src/api/upload.py`
-  - CSV batch upload and prediction
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend** | Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, Uvicorn, Passlib (bcrypt), PyJWT / python-jose, Starlette |
+| **Frontend** | React 19, TypeScript 5.8, Vite 7, Tailwind CSS 3, Framer Motion 12, Recharts, Lucide Icons, React Router 7, React Hook Form 7 |
+| **Database** | PostgreSQL 15+ (Hosted on Neon or Local), SQLAlchemy ORM |
+| **Machine Learning** | pandas, scikit-learn, joblib, NumPy |
+| **DevOps & Deploy** | Render (Backend API), Vercel (Frontend SPA), Docker (Multi-stage), GitHub Actions & GHCR |
 
-### Auth and security
+---
 
-- `src/auth/security.py`
-  - password hashing, JWT creation, JWT decoding, refresh token hashing
-- `src/auth/dependencies.py`
-  - current-user resolution and role-based access control
-- `src/auth/bootstrap.py`
-  - default admin bootstrap on app startup
-
-### Database layer
-
-- `src/database/connection.py`
-  - SQLAlchemy engine and session setup
-- `src/database/models.py`
-  - ORM models
-- `src/database/crud.py`
-  - database operations used by API routes
-- `database/schema.sql`
-  - PostgreSQL schema, indexes, triggers, and views
-
-### Data and ML pipeline
-
-- `src/scripts/generate_dataset.py`
-  - synthetic dataset generation
-- `src/scripts/ingest_data.py`
-  - raw-to-processed data pipeline
-- `src/features/preprocess.py`
-  - cleaning, encoding, and feature engineering
-- `src/models/train_model.py`
-  - train/evaluate candidate models and save the best artifact
-
-### Frontend
-
-- `frontend/my-react-app/src/App.tsx`
-  - app routes
-- `frontend/my-react-app/src/context/AuthContext.tsx`
-  - auth state management
-- `frontend/my-react-app/src/api/*.ts`
-  - frontend API integration
-- `frontend/my-react-app/src/pages/*`
-  - dashboard, predictor, results, upload, student profile, login, register
-- `frontend/my-react-app/src/components/*`
-  - layout, tables, forms, upload UI, and reusable components
-
-## Database design
-
-The project uses a normalized relational schema with the following main tables:
-
-- `students`
-- `parents`
-- `academic_records`
-- `courses`
-- `enrollments`
-- `grades`
-- `ml_models`
-- `predictions`
-- `interventions`
-- `users`
-- `auth_sessions`
-- `audit_log`
-- `upload_history`
-
-Key relationships:
-
-- One student can have many academic records
-- One student can have many predictions
-- One prediction can have many interventions
-- One user can have many auth sessions and audit log entries
-- Enrollments connect students and courses
-- Grades belong to enrollments
-
-The SQL schema also includes:
-
-- indexes for common lookup and reporting queries
-- triggers for automatic `updated_at` maintenance
-- reporting views such as `student_performance_summary` and `at_risk_students`
-
-## ML workflow
-
-### Input features
-
-The current prediction flow uses features such as:
-
-- gender
-- age
-- parent education
-- attendance rate
-- study hours
-- previous GPA
-- final grade
-- assignment score average
-- exam score average
-- class participation
-- late submissions
-- semester GPA history
-
-### Preprocessing
-
-`src/features/preprocess.py` performs:
-
-- duplicate removal
-- numeric missing value filling using mean or median
-- default filling for participation and late submissions
-- one-hot encoding for categorical columns
-- feature engineering such as `hours_per_gpa` and `grade_trend`
-
-### Training
-
-`src/models/train_model.py` currently:
-
-- loads `data/processed/students_processed.csv`
-- drops identifier columns
-- creates a binary target using the median of `final_grade`
-- splits the dataset into train and test sets
-- imputes missing values
-- trains Logistic Regression and Random Forest
-- compares metrics such as accuracy, precision, recall, and ROC-AUC
-- saves the best model to `models/`
-
-### Inference
-
-The API loads the saved model artifact, preprocesses incoming input, aligns feature columns with the training artifact, runs prediction, calculates confidence from `predict_proba()`, assigns a performance category and risk level, and stores the result in PostgreSQL.
-
-## API overview
-
-### System
-
-- `GET /`
-- `GET /health`
-- `GET /api/stats`
-
-### Authentication
-
-- `POST /api/auth/register`
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `POST /api/auth/logout-all`
-- `GET /api/auth/me`
-
-### Students
-
-- `POST /api/students`
-- `GET /api/students`
-- `GET /api/students/search`
-- `GET /api/students/{student_code}`
-- `GET /api/students/{student_code}/performance`
-- `GET /api/students/{student_code}/profile`
-- `PUT /api/students/{student_code}`
-- `DELETE /api/students/{student_code}`
-
-### Predictions
-
-- `POST /api/predict`
-- `GET /api/predictions/{student_code}`
-- `GET /api/at-risk-students`
-
-### Uploads
-
-- `POST /api/upload-csv`
-- `GET /api/upload-history`
-
-## Project structure
+## 📁 Project Structure
 
 ```text
 ai_student_performance_predictor/
-|-- data/
-|   |-- raw/
-|   `-- processed/
-|-- database/
-|   |-- schema.sql
-|   `-- queries.sql
-|-- frontend/
-|   `-- my-react-app/
-|-- models/
-|   |-- logistic_regression.joblib
-|   `-- random_forest.joblib
-|-- src/
-|   |-- api/
-|   |-- auth/
-|   |-- data/
-|   |-- database/
-|   |-- features/
-|   |-- models/
-|   `-- scripts/
-|-- .env.example
-|-- requirements.txt
-`-- README.md
+├── .github/
+│   └── workflows/
+│       └── publish-backend-image.yml  # GitHub Actions CI/CD for Docker image publishing to GHCR
+├── data/
+│   ├── raw/                           # Raw input datasets
+│   ├── processed/                     # Processed features CSV
+│   └── uploads/                       # Uploaded CSV batch files
+├── database/
+│   ├── schema.sql                     # PostgreSQL schema DDL, triggers, and views
+│   └── queries.sql                    # Common analytical SQL queries
+├── frontend/
+│   └── my-react-app/
+│       ├── public/                    # Static assets
+│       ├── src/
+│       │   ├── api/                   # API wrapper modules (http, auth, predict, students, etc.)
+│       │   ├── components/            # UI components (Button, Card, Layout, Tables, Modals)
+│       │   ├── context/               # AuthContext for state & token management
+│       │   ├── lib/                   # Utility helpers (cn, formatting)
+│       │   ├── pages/                 # Home, Login, RegisterUser, MainDashboard, StudentDashboard,
+│       │   │                          # Predictor, PredictionResult, Students, AtRiskStudents,
+│       │   │                          # Analytics, UsersManagement, AuditLogs, Invites, AcceptInvite,
+│       │   │                          # EnrollmentPending, About, Settings, AccessDenied
+│       │   ├── App.tsx                # React Router setup & protected route guards
+│       │   └── main.tsx               # SPA entrypoint
+│       ├── package.json
+│       ├── vercel.json                # Vercel SPA rewrite configuration
+│       └── vite.config.js             # Vite build configuration & dev proxy
+├── models/
+│   └── random_forest.joblib           # Trained Random Forest model artifact
+├── src/
+│   ├── api/                           # FastAPI Route Handlers
+│   │   ├── admin.py                   # User management & audit logs endpoints
+│   │   ├── auth.py                    # Login, signup, refresh, logout, profile endpoints
+│   │   ├── dashboard.py               # Student me/dashboard summary endpoint
+│   │   ├── enrollments.py             # Invites & student linking request workflows
+│   │   ├── middleware.py              # Demo scope & demo rate-limiting middleware
+│   │   ├── predict.py                 # Single & batch prediction endpoints
+│   │   ├── students.py                # Student CRUD, search, performance & profile endpoints
+│   │   └── upload.py                  # CSV batch upload endpoint
+│   ├── auth/                          # Security, JWT tokens, RBAC dependencies & bootstrapper
+│   │   ├── bootstrap.py               # Startup admin creation & legacy demo decommissioning
+│   │   ├── dependencies.py            # Role & self-access authorization guards
+│   │   └── security.py                # Password hashing & JWT generation/verification
+│   ├── core/
+│   │   └── config.py                  # Pydantic BaseSettings application configuration
+│   ├── database/                      # SQLAlchemy ORM, Engine, CRUD & Demo Sandbox
+│   │   ├── connection.py              # Engine setup & DB session generators
+│   │   ├── crud.py                    # Database query functions
+│   │   ├── demo.py                    # Isolated demo schema lifecycle & reset logic
+│   │   └── models.py                  # SQLAlchemy ORM model definitions
+│   ├── features/
+│   │   └── preprocess.py              # ML feature extraction & preprocessing pipeline
+│   ├── models/
+│   │   └── train_model.py             # Model training, comparison & artifact export script
+│   ├── scripts/                       # Dataset generator & data ingestion scripts
+│   ├── services/
+│   │   └── email_service.py           # Email notification service for student invitations
+│   ├── main.py                        # FastAPI application entrypoint & middleware setup
+│   └── model_loader.py                # Singleton ML model artifact loader
+├── Dockerfile                         # Production multi-stage Docker build
+├── render.yaml                        # Render deployment configuration
+├── requirements.txt                   # Backend Python dependencies
+└── README.md
 ```
 
-## Local setup
+---
 
-### 1. Clone the repository
+## 🗄️ Database Design
 
+The PostgreSQL database uses a normalized relational schema supporting full data tracking, session management, and audit governance.
+
+```text
+ +------------------+        +----------------------+        +--------------------+
+ |     students     |<-------|   academic_records   |        |       users        |
+ +------------------+        +----------------------+        +--------------------+
+ | student_id (PK)  |        | record_id (PK)       |        | user_id (PK)       |
+ | student_code     |        | student_id (FK)      |        | username           |
+ | first_name       |        | academic_year        |        | email              |
+ | last_name        |        | semester             |        | password_hash      |
+ | email            |        | gpa                  |        | role               |
+ | date_of_birth    |        | attendance_rate      |        | student_id (FK)    |
+ | status           |        | study_hours_per_week |        | is_active, is_demo |
+ +------------------+        +----------------------+        +--------------------+
+     |          |                                                      |
+     |          +--------------------+                                 |
+     v                               v                                 v
++---------------+          +--------------------+            +--------------------+
+|    parents    |          |    predictions     |            |   auth_sessions    |
++---------------+          +--------------------+            +--------------------+
+| parent_id(PK) |          | prediction_id (PK) |            | session_id (PK)    |
+| student_id(FK)|          | student_id (FK)    |            | user_id (FK)       |
+| name          |          | model_id (FK)      |            | refresh_token_hash |
+| relationship  |          | predicted_gpa      |            | expires_at         |
+| phone, email  |          | risk_level         |            | revoked_at         |
++---------------+          | confidence_score   |            +--------------------+
+                           +--------------------+                      |
+                                     |                                 v
+                                     v                       +--------------------+
+                           +--------------------+            |     audit_log      |
+                           |   interventions    |            +--------------------+
+                           +--------------------+            | log_id (PK)        |
+                           | intervention_id(PK)|            | user_id (FK)       |
+                           | prediction_id (FK) |            | action             |
+                           | intervention_type  |            | table_name         |
+                           | priority, status   |            | old/new_values     |
+                           +--------------------+            | ip_address         |
+                                                             +--------------------+
+```
+
+### Table Summary
+- **`students`**: Core demographic and academic status info.
+- **`parents`**: Student guardian contact details and primary contact indicators.
+- **`academic_records`**: Historical semester-by-semester metrics (GPA, attendance, study hours, participation, late submissions).
+- **`courses`**, **`enrollments`**, **`grades`**: Course catalog, student course enrollments, and granular assessment scores.
+- **`ml_models`**: Metadata, metrics (accuracy, precision, recall, F1), and hyperparameters for trained models.
+- **`predictions`**: Generated ML prediction records, feature inputs snapshot, predicted GPA, confidence score, and risk level.
+- **`interventions`**: Action items assigned to educators to support at-risk students.
+- **`users`**: System user accounts with roles (`admin`, `teacher`, `counselor`, `student`, `parent`).
+- **`auth_sessions`**: Refresh token session tracking with token family rotation and remote revocation.
+- **`audit_log`**: Security and governance log tracking user actions, IP addresses, and state changes.
+- **`upload_history`**: Tracking history and error summaries for CSV batch uploads.
+- **`enrollment_invites`**: Invitation tokens for onboarding new students.
+- **`linking_requests`**: Student self-service linking requests pending administrative approval.
+
+---
+
+## ⚡ ML Pipeline & Inference
+
+### 1. Feature Set
+Incoming predictions pass through `src/features/preprocess.py` to process:
+- **Demographics**: `gender`, `age`, `parent_education`
+- **Academic Metrics**: `attendance_rate`, `study_hours`, `previous_gpa`, `final_grade`, `assignment_score_avg`, `exam_score_avg`
+- **Behavioral Signals**: `class_participation`, `late_submissions`, `previous_gpa_sem1`, `previous_gpa_sem2`
+- **Engineered Features**: `hours_per_gpa`, `grade_trend`
+
+### 2. Model Training & Comparison
+Running `python src/models/train_model.py`:
+- Loads processed student data from `data/processed/students_processed.csv`.
+- Trains and evaluates candidate models (`LogisticRegression` vs. `RandomForestClassifier`).
+- Computes metrics: Accuracy, Precision, Recall, F1-Score, and ROC-AUC.
+- Automatically exports the highest-performing model to `models/random_forest.joblib`.
+
+### 3. Real-Time Inference Flow
+1. API receives features payload at `POST /api/predict`.
+2. Model Singleton (`src/model_loader.py`) loads `models/random_forest.joblib`.
+3. Input is cleaned, one-hot encoded, and aligned with training columns.
+4. Model calculates class probability using `predict_proba()`.
+5. Risk Level is computed (`Low`, `Medium`, `High`, `Critical`).
+6. Result and recommended interventions are persisted to PostgreSQL and returned to the client.
+
+---
+
+## 🔌 API Endpoint Overview
+
+### System & Health
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | Public | HTML landing & API status page |
+| `GET` | `/health` | Public | System and database connectivity check |
+| `GET` | `/api/stats` | Public | Summary statistics endpoint |
+
+### Authentication & Profile (`/api/auth`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | Public | Authenticate user & return JWT token pair |
+| `POST` | `/api/auth/signup` | Public | Self-registration endpoint (Student/Teacher) |
+| `POST` | `/api/auth/register` | Admin | Admin endpoint to register user with explicit role |
+| `POST` | `/api/auth/refresh` | Public | Exchange refresh token for new access token |
+| `POST` | `/api/auth/logout` | Authenticated | Revoke current refresh token session |
+| `POST` | `/api/auth/logout-all` | Authenticated | Revoke all active refresh sessions for user |
+| `GET` | `/api/auth/me` | Authenticated | Fetch current authenticated user profile |
+
+### Admin Governance (`/api/admin`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/admin/users` | Admin | List all system users with status & roles |
+| `PATCH` | `/api/admin/users/{id}` | Admin | Update user role or active status |
+| `DELETE` | `/api/admin/users/{id}` | Admin | Soft-delete user (deactivate & revoke sessions) |
+| `GET` | `/api/admin/audit-logs` | Admin | Retrieve recent system audit logs |
+
+### Students (`/api/students`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/students` | Admin, Teacher | Paginated list of students |
+| `POST` | `/api/students` | Admin, Teacher | Create a new student record |
+| `GET` | `/api/students/search` | Admin, Teacher | Search students by name or code |
+| `GET` | `/api/students/{code}` | Admin, Teacher, Self | Fetch student details |
+| `GET` | `/api/students/{code}/performance` | Admin, Teacher, Self | Fetch student performance metrics |
+| `GET` | `/api/students/{code}/profile` | Admin, Teacher, Self | Complete profile data with predictions |
+| `PUT` | `/api/students/{code}` | Admin, Teacher | Update student record |
+| `DELETE` | `/api/students/{code}` | Admin | Delete student record |
+
+### Predictions & Risk (`/api`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/predict` | Admin, Teacher, Self | Run ML prediction for a student |
+| `GET` | `/api/predictions/{code}` | Admin, Teacher, Self | Get prediction history for a student |
+| `GET` | `/api/at-risk-students` | Admin, Teacher | List all students flagged as High or Critical risk |
+| `GET/POST` | `/api/at-risk-students/{code}/guardian-contact` | Admin, Teacher | View or update guardian contact details |
+| `POST` | `/api/at-risk-students/{code}/interventions` | Admin, Teacher | Log an intervention for an at-risk student |
+
+### Batch Uploads (`/api`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/upload-csv` | Admin, Teacher | Upload CSV dataset for bulk ML predictions |
+| `GET` | `/api/upload-history` | Admin, Teacher | Retrieve history of batch CSV uploads |
+
+### Enrollments & Student Linking (`/api/enrollments`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/enrollments/preview` | Admin, Teacher | Preview student record match for email/code |
+| `POST` | `/api/enrollments/invite` | Admin, Teacher | Create an enrollment invite link |
+| `GET` | `/api/enrollments/status/{token}` | Public | Check validity of an invite token |
+| `POST` | `/api/enrollments/accept` | Public | Accept invite token & complete account setup |
+| `POST` | `/api/enrollments/request-link` | Student | Request manual linkage to a student record |
+| `GET` | `/api/enrollments/my-request` | Student | View pending linking request status |
+| `GET` | `/api/enrollments/link-requests/pending` | Admin, Teacher | List pending linking requests |
+| `POST` | `/api/enrollments/link-requests/{id}/approve` | Admin, Teacher | Approve student linking request |
+| `POST` | `/api/enrollments/link-requests/{id}/reject` | Admin, Teacher | Reject student linking request |
+
+---
+
+## 💻 Local Setup & Development
+
+### Prerequisites
+- **Python 3.11+**
+- **Node.js 18+** & **npm**
+- **PostgreSQL 15+** running locally (or a Neon database URI)
+
+---
+
+### 1. Clone the Repository
 ```powershell
-git clone <your-repo-url>
+git clone https://github.com/MandarK07/ai_student_performance_predictor.git
 cd ai_student_performance_predictor
 ```
 
-### 2. Create and activate a Python virtual environment
+### 2. Backend Setup
 
+#### Create and Activate Virtual Environment
 ```powershell
+# Windows (PowerShell)
 python -m venv venv
 .\venv\Scripts\activate
+
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-### 3. Install backend dependencies
-
+#### Install Backend Dependencies
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
-
-Create a `.env` file based on `.env.example`.
-
-Minimum values to configure:
+#### Environment Variables Configuration
+Create a `.env` file in the project root based on `.env.example`:
 
 ```env
+# Database Configuration
 DATABASE_URL=postgresql://postgres:password@localhost:5432/student_performance_db
-FRONTEND_URL=http://localhost:5173
-MODEL_PATH=models/random_forest.joblib
-JWT_SECRET=change-me-in-production
-ADMIN_USERNAME=admin
-ADMIN_EMAIL=admin@studentai.com
-ADMIN_PASSWORD=admin123
-```
 
-`FRONTEND_URL` may be a comma-separated list when you need both local and deployed frontend origins.
+# Application Settings
+APP_ENV=development
+DEBUG=True
+SECRET_KEY=super-secret-key-change-in-production
 
-Useful auth-related environment variables supported by the code:
-
-```env
+# Authentication Settings
+JWT_SECRET=super-secret-jwt-key-change-in-production
 JWT_ALGORITHM=HS256
 JWT_ISSUER=ai-student-performance-predictor
-ACCESS_TOKEN_EXPIRE_MINUTES=15
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
 REFRESH_TOKEN_EXPIRE_DAYS=7
 MAX_FAILED_LOGIN_ATTEMPTS=5
 ACCOUNT_LOCK_MINUTES=15
+
+# CORS Settings (comma-separated origins)
+FRONTEND_URL=http://localhost:5173,https://ai-student-performance-predictor.vercel.app
+
+# Model Configuration
+MODEL_PATH=models/random_forest.joblib
+
+# File Upload Settings
+MAX_UPLOAD_SIZE=10485760
+UPLOAD_DIR=data/uploads/
+
+# Admin Bootstrap Credentials
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@studentai.com
+ADMIN_PASSWORD=admin123
+ADMIN_FULL_NAME=System Administrator
 ```
 
-### 5. Create PostgreSQL database and apply schema
-
-Create a PostgreSQL database named `student_performance_db`, then run:
+#### Initialize Database Schema
+Create the local PostgreSQL database, then apply `database/schema.sql`:
 
 ```powershell
+# Using psql CLI
+psql -U postgres -c "CREATE DATABASE student_performance_db;"
 psql -U postgres -d student_performance_db -f database/schema.sql
 ```
 
-### 6. Start the backend
-
+#### Start Backend Server
 ```powershell
 python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
+- **API Base**: `http://localhost:8000`
+- **Interactive Swagger Docs**: `http://localhost:8000/docs`
+- **Redoc Documentation**: `http://localhost:8000/redoc`
 
-Backend URLs:
+---
 
-- API root: `http://localhost:8000`
-- Swagger docs: `http://localhost:8000/docs`
-- Redoc docs: `http://localhost:8000/redoc`
-
-### 7. Start the frontend
+### 3. Frontend Setup
 
 ```powershell
 cd frontend/my-react-app
 npm install
+```
+
+#### Frontend Environment File
+Create `frontend/my-react-app/.env.local` (or `.env`):
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
+```
+
+#### Launch Frontend Dev Server
+```powershell
 npm run dev
 ```
+- **Frontend App**: `http://localhost:5173`
 
-Frontend URL:
+---
 
-- `http://localhost:5173`
+## 🔬 Data & Model Training Workflow
 
-Local development uses the Vite `/api` proxy automatically. For deployed frontend builds, set `VITE_API_BASE_URL` in `frontend/my-react-app/.env.example` or in your hosting provider dashboard.
-
-## Free deployment setup
-
-This repository is prepared for a free-tier deployment split:
-
-- PostgreSQL on Neon
-- FastAPI backend on Render using `render.yaml`
-- React frontend on Vercel using `frontend/my-react-app/vercel.json`
-
-### 1. Create the database on Neon
-
-- Create a free PostgreSQL project in Neon
-- Copy the connection string into `DATABASE_URL`
-- Apply the schema:
+If you want to regenerate synthetic data and retrain the Machine Learning model:
 
 ```powershell
-psql "<your-neon-database-url>" -f database/schema.sql
-```
-
-### 2. Deploy the backend on Render
-
-- Create a new Web Service from this repository, or use `render.yaml`
-- Build command:
-
-```bash
-pip install -r requirements.txt
-```
-
-- Start command:
-
-```bash
-uvicorn src.main:app --host 0.0.0.0 --port $PORT
-```
-
-- Required environment variables:
-
-```env
-DATABASE_URL=<your-neon-connection-string>
-FRONTEND_URL=https://<your-vercel-site>.vercel.app
-MODEL_PATH=models/random_forest.joblib
-JWT_SECRET=<strong-random-secret>
-ADMIN_USERNAME=admin
-ADMIN_EMAIL=admin@studentai.com
-ADMIN_PASSWORD=<strong-admin-password>
-```
-
-### 3. Deploy the frontend on Vercel
-
-- Import `frontend/my-react-app` as the project root
-- Build command:
-
-```bash
-npm run build
-```
-
-- Output directory:
-
-```text
-dist
-```
-
-- Required environment variable:
-
-```env
-VITE_API_BASE_URL=https://<your-render-service>.onrender.com/api
-```
-
-### 4. Smoke test the deployed app
-
-- Open the Vercel frontend URL
-- Confirm login or signup works
-- Confirm `GET /health` on the Render backend returns healthy status
-- Run a single prediction
-- Upload a sample CSV and confirm batch predictions complete
-
-## Private repo deployment path
-
-If you do not want to connect the private repository directly to Render, use the existing backend `Dockerfile` with GitHub Container Registry and deploy the backend as an image-backed Render service.
-
-### 1. Publish the backend image to GHCR
-
-- Push this repository to GitHub
-- Run the included GitHub Actions workflow:
-  - `.github/workflows/publish-backend-image.yml`
-- The workflow publishes:
-
-```text
-ghcr.io/<github-owner>/ai-student-performance-api:latest
-```
-
-Notes:
-
-- The workflow uses the built-in `GITHUB_TOKEN`
-- The image is built for `linux/amd64`, which Render requires
-- Re-run the workflow after backend changes, or push to `main`
-
-### 2. Create a Render service from the private image
-
-- In Render, create a new Web Service
-- Under Source Code, choose `Existing Image`
-- Use the image URL:
-
-```text
-ghcr.io/<github-owner>/ai-student-performance-api:latest
-```
-
-- Add a private registry credential for GitHub Container Registry:
-  - Registry: `GitHub Container Registry`
-  - Username: your GitHub username
-  - Personal Access Token: a GitHub classic PAT with `read:packages`
-
-- Configure environment variables:
-
-```env
-DATABASE_URL=<your-neon-connection-string>
-FRONTEND_URL=http://localhost:5173
-MODEL_PATH=models/random_forest.joblib
-JWT_SECRET=<strong-random-secret>
-JWT_ALGORITHM=HS256
-JWT_ISSUER=ai-student-performance-predictor
-ADMIN_USERNAME=admin
-ADMIN_EMAIL=admin@studentai.com
-ADMIN_PASSWORD=<strong-admin-password>
-ADMIN_FULL_NAME=System Administrator
-```
-
-### 3. Update and redeploy the image-backed service
-
-- Push backend changes to GitHub so the GHCR workflow publishes a fresh image
-- In Render, trigger `Manual Deploy` -> `Deploy latest reference`
-- After the frontend is live, replace `FRONTEND_URL=http://localhost:5173` with your Vercel URL
-
-## Data and model generation workflow
-
-If you want to regenerate the dataset and retrain the model:
-
-### 1. Generate synthetic data
-
-```powershell
+# 1. Generate synthetic student data
 python src/scripts/generate_dataset.py
-```
 
-### 2. Create processed dataset
-
-```powershell
+# 2. Ingest and preprocess raw dataset
 python src/scripts/ingest_data.py
-```
 
-### 3. Train and save the best model
-
-```powershell
+# 3. Train models, evaluate performance & export the best artifact to models/
 python src/models/train_model.py
 ```
 
-## Authentication and authorization
+---
 
-The project includes:
+## 🚀 Free-Tier Cloud Deployment Guide
 
-- password hashing with bcrypt
-- JWT access tokens
-- JWT refresh tokens
-- refresh token rotation
-- persistent auth sessions in PostgreSQL
-- account lockout after repeated failed login attempts
-- audit logging for auth and role-based access events
+This project is configured for cloud deployment using free-tier services:
+- **Database**: PostgreSQL on [Neon](https://neon.tech/)
+- **Backend API**: FastAPI on [Render](https://render.com/)
+- **Frontend SPA**: React on [Vercel](https://vercel.com/)
 
-Default admin creation happens during startup if the configured admin user does not already exist.
+---
 
-If you already have an admin row in the deployed database and need to realign it with your current Render environment variables, temporarily set `ADMIN_SYNC_ON_STARTUP=true` and redeploy once. That will sync the configured admin username, email, password, full name, and role onto the existing admin account.
+### 1. Database Deployment (Neon)
+1. Create a free PostgreSQL project on Neon.
+2. Copy the connection string (ensure `sslmode=require`).
+3. Execute `database/schema.sql` against the Neon database using `psql` or Neon SQL Editor.
 
-## Frontend features
+---
 
-- landing page
-- login and signup
-- protected dashboard layout
-- student management table
-- single-student prediction form
-- prediction result page
-- CSV upload with result/error summary
-- student profile page with academic metrics and recommendation feed
-- at-risk students page
+### 2. Backend Deployment (Render)
+1. Create a new **Web Service** on Render connected to this repository (or use `render.yaml`).
+2. Build Command: `pip install -r requirements.txt`
+3. Start Command: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`
+4. Set Environment Variables:
+   - `DATABASE_URL`: `<your-neon-connection-string>`
+   - `FRONTEND_URL`: `https://<your-vercel-app>.vercel.app`
+   - `MODEL_PATH`: `models/random_forest.joblib`
+   - `JWT_SECRET`: `<strong-random-secret>`
+   - `ADMIN_USERNAME`: `admin`
+   - `ADMIN_EMAIL`: `admin@studentai.com`
+   - `ADMIN_PASSWORD`: `<strong-admin-password>`
 
-## Known gaps / next improvements
+---
 
-- align training metrics automatically with `ml_models` table instead of hardcoded metadata fallback
-- implement frontend create/edit/delete flows for students and interventions
-- complete upload history persistence and `/api/upload-history`
-- replace the current classification-to-GPA mapping with a cleaner production ML objective
-- add automated tests for backend and frontend
-- add Docker and CI/CD workflows if needed
+### 3. Frontend Deployment (Vercel)
+1. Import `frontend/my-react-app` into Vercel.
+2. Framework Preset: **Vite**
+3. Build Command: `npm run build`
+4. Output Directory: `dist`
+5. Environment Variable:
+   - `VITE_API_BASE_URL`: `https://<your-render-service>.onrender.com/api`
 
+---
+
+## 🐳 Docker & CI/CD Deployment
+
+### Local Docker Run
+```powershell
+# Build Docker image
+docker build -t ai-student-performance-api .
+
+# Run Container
+docker run -d -p 8000:8000 --env-file .env ai-student-performance-api
+```
+
+### Private Repository GHCR Workflow
+The repository includes a GitHub Actions workflow (`.github/workflows/publish-backend-image.yml`).
+On push to `main`, it automatically builds an `linux/amd64` Docker image and publishes it to GitHub Container Registry:
+```text
+ghcr.io/<your-github-username>/ai-student-performance-api:latest
+```
+Render can pull directly from this private GHCR image for deployments.
+
+---
+
+## 🔒 Security & Best Practices
+
+- **Isolated Demo Sandbox**: Demo operations run inside a separate PostgreSQL schema (`demo`) with rate-limiting and non-demo operational guards.
+- **Password Security**: Passwords are hashed using bcrypt with salt rounds.
+- **Session Revocation**: JWT refresh tokens are tracked in `auth_sessions` and can be invalidated globally or individually.
+- **Audit Logging**: All access control events (grants, denials, role changes) log client IP address, action type, and JSON state diffs to `audit_log`.
+- **CORS Safeguards**: Strict CORS origin verification with fallback headers for unhandled exception responses.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the Repository
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📜 License
+
+Distributed under the MIT License. See `LICENSE` for more information.

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from src.auth.dependencies import require_roles, get_current_user
+from src.auth.dependencies import require_roles, get_current_user, require_non_demo
 from src.auth.security import hash_password
 from src.database.connection import get_db
 from src.database import crud
@@ -68,7 +68,8 @@ def _generate_token() -> str:
 async def preview_invite_target(
     payload: InviteRequest,
     db: Session = Depends(get_db),
-    _current_user=Depends(require_roles("admin", "teacher"))
+    _current_user=Depends(require_roles("admin", "teacher")),
+    _non_demo: bool = Depends(require_non_demo),
 ):
     student, matched_by = _resolve_student_for_invite_payload(
         db,
@@ -85,7 +86,8 @@ async def preview_invite_target(
 async def create_invite(
     payload: InviteRequest,
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles("admin", "teacher"))
+    current_user=Depends(require_roles("admin", "teacher")),
+    _non_demo: bool = Depends(require_non_demo),
 ):
     student, matched_by = _resolve_student_for_invite_payload(
         db,

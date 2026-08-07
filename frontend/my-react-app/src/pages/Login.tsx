@@ -12,7 +12,8 @@ import {
   EyeOff, 
   Loader2,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { cn } from "../lib/utils";
@@ -59,6 +60,7 @@ export default function Login() {
   const [activeRole, setActiveRole] = useState<Role>("student");
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [demoLoading, setDemoLoading] = useState<"teacher" | "student" | null>(null);
   
   const currentRoleConfig = roles.find(r => r.id === activeRole)!;
 
@@ -74,22 +76,41 @@ export default function Login() {
     },
   });
 
+  const getRedirectTarget = (me: { role: string; student_id: string | null }) => {
+    const roleTargets: Record<string, string> = {
+      admin: "/admin-dashboard",
+      teacher: "/teacher-dashboard",
+      student: me.student_id ? "/student-dashboard" : "/enrollment-pending"
+    };
+    return roleTargets[me.role] || "/dashboard";
+  };
+
   const onSubmit = async (data: any) => {
     setServerError(null);
     try {
       const me = await login(data.usernameOrEmail, data.password, activeRole);
-      
-      const roleTargets: Record<string, string> = {
-        admin: "/admin-dashboard",
-        teacher: "/teacher-dashboard",
-        student: me.student_id ? "/student-dashboard" : "/enrollment-pending"
-      };
-      
-      const target = roleTargets[me.role] || "/dashboard";
+      const target = getRedirectTarget(me);
       const redirectUri = (from === "/" || from === "/dashboard" || from === "/login") ? target : from;
       navigate(redirectUri, { replace: true });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Authentication failed. Please check your credentials.");
+    }
+  };
+
+  const handleDemoLogin = async (demoRole: "teacher" | "student") => {
+    setServerError(null);
+    setDemoLoading(demoRole);
+    try {
+      const me = await login(
+        demoRole === "teacher" ? "teacher_demo" : "student_demo",
+        demoRole === "teacher" ? "teacher123" : "student123",
+        demoRole
+      );
+      navigate(getRedirectTarget(me), { replace: true });
+    } catch (err) {
+      setServerError(err instanceof Error ? err.message : "Demo login failed. Please make sure the backend has been initialized.");
+    } finally {
+      setDemoLoading(null);
     }
   };
 
@@ -279,6 +300,60 @@ export default function Login() {
               </p>
             )}
           </form>
+
+          {/* Demo Accounts */}
+          <div className="mt-8">
+            <div className="relative flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <Sparkles className="h-3.5 w-3.5" />
+                Try a demo account
+              </span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-3">
+              <button
+                type="button"
+                onClick={() => handleDemoLogin("teacher")}
+                disabled={demoLoading !== null}
+                className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:shadow-lg hover:shadow-emerald-900/5 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
+                  {demoLoading === "teacher" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <BookOpen className="h-5 w-5" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Demo Teacher</p>
+                  <p className="mt-0.5 text-xs text-slate-400">teacher_demo / teacher123</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-emerald-500" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDemoLogin("student")}
+                disabled={demoLoading !== null}
+                className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-200 hover:bg-white hover:shadow-lg hover:shadow-rose-900/5 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 transition-transform duration-300 group-hover:scale-110">
+                  {demoLoading === "student" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <GraduationCap className="h-5 w-5" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Demo Student</p>
+                  <p className="mt-0.5 text-xs text-slate-400">student_demo / student123</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-rose-500" />
+              </button>
+            </div>
+          </div>
 
           {/* Social / Footer */}
           <div className="mt-10 text-center">
